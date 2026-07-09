@@ -11,17 +11,21 @@ const Configuracion = () => {
     <main className="config-page">
       <section className="profile-card">
         <div className="profile-header">
-          <span className="profile-icon">✨</span>
+          <i className="bx bx-cog profile-icon" />
           <div>
             <h1 className="profile-title">Configuración de cuenta</h1>
             <p className="profile-subtitle">Administra tu perfil y preferencias</p>
           </div>
         </div>
         <div className="profile-info">
-          <p><span>Nombre:</span> {usuario.nombre}</p>
-          <p><span>Rol:</span> {usuario.rol}</p>
-          <p><span>Email:</span> admin@mymparfums.com</p>
-          <p><span>Teléfono:</span> +56 9 1234 5678</p>
+          <div className="profile-row"><span>Nombre</span><strong>{usuario.nombre}</strong></div>
+          <div className="profile-row"><span>Rol</span><strong>{usuario.rol}</strong></div>
+          <div className="profile-row"><span>Email</span><strong>{usuario.email || "admin@mymparfums.com"}</strong></div>
+          <div className="profile-row"><span>Teléfono</span><strong>{usuario.phone || "+56 9 1234 5678"}</strong></div>
+        </div>
+        <div className="profile-actions">
+          <button type="button" className="profile-button">Editar perfil</button>
+          <button type="button" className="profile-button profile-button-secondary">Seguridad</button>
         </div>
         <div className="profile-note">
           Bienvenido a tu panel de usuario. Aquí puedes revisar tu información personal y mantener tu cuenta segura.

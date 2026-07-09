@@ -11,41 +11,46 @@ const Menu = () => {
   };
 
   return (
-    <nav className="nav-bar">
-      <div className="brand-bar">
-        <span className="brand-icon">💧</span>
-        <div>
-          <h1>Mym Parfums</h1>
-          <p>Fragancias formales con un toque azul</p>
+    <header className="site-header">
+      <nav className="nav-bar">
+        <div className="brand-bar">
+          <i className="bx bx-droplet brand-icon" />
+          <div className="brand-copy">
+            <h1>Mym Parfums.</h1>
+            <p>Fragancias formales con un toque azul</p>
+          </div>
         </div>
-      </div>
-      <ul className="nav-links">
-        <li><Link to="/">Inicio</Link></li>
-        <li><Link to="/">Perfumes</Link></li>
-        <li><a href="#contact">Contacto</a></li>
-      </ul>
-      <div className="nav-actions">
-        {usuario ? (
-          <>
-            <Link to="/configuracion" className="action-btn action-primary">
-              <span className="link-icon">👤</span>Mi cuenta
-            </Link>
-            <button type="button" className="action-btn action-logout" onClick={handleLogout}>
-              <span className="link-icon">🚪</span>Cerrar sesión
-            </button>
-          </>
-        ) : (
-          <>
-            <Link to="/login" className="action-btn action-primary">
-              <span className="link-icon">🔐</span>Iniciar sesión
-            </Link>
-            <Link to="/crearcuenta" className="action-btn action-secondary">
-              <span className="link-icon">✒️</span>Registrarse
-            </Link>
-          </>
-        )}
-      </div>
-    </nav>
+
+        <ul className="nav-links nav-center">
+          <li><Link to="/"><i className="bx bx-home-alt" />Inicio</Link></li>
+          <li><Link to="/"><i className="bx bx-gift" />Perfumes</Link></li>
+          <li><a href="#contact"><i className="bx bx-envelope" />Contacto</a></li>
+        </ul>
+
+        <ul className="nav-actions nav-right">
+          {usuario ? (
+            <>
+              <li>
+                <Link to="/configuracion" className="action-btn action-primary">
+                  <i className="bx bx-user-circle" />Mi cuenta
+                </Link>
+              </li>
+              <li>
+                <button type="button" className="action-btn action-logout" onClick={handleLogout}>
+                  <i className="bx bx-log-out" />Cerrar sesión
+                </button>
+              </li>
+            </>
+          ) : (
+            <li>
+              <Link to="/login" className="single-action-btn">
+                <i className="bx bx-log-in" />Iniciar sesión
+              </Link>
+            </li>
+          )}
+        </ul>
+      </nav>
+    </header>
   );
 };
 
