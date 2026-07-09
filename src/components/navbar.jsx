@@ -3,16 +3,7 @@ import "../styles/nav.css";
 
 const Menu = () => {
   const navigate = useNavigate();
-
   const usuario = JSON.parse(localStorage.getItem("usuario"));
-
-  const handleConfig = () => {
-    if (usuario) {
-      navigate("/configuracion");
-    } else {
-      navigate("/login");
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("usuario");
@@ -22,27 +13,36 @@ const Menu = () => {
   return (
     <nav className="nav-bar">
       <div className="brand-bar">
-        <span className="brand-icon">🌿</span>
+        <span className="brand-icon">💧</span>
         <div>
           <h1>Mym Parfums</h1>
-          <p>Fragancias claras y serenas</p>
+          <p>Fragancias formales con un toque azul</p>
         </div>
       </div>
       <ul className="nav-links">
-        <li><Link to="/"><span className="link-icon">🏠</span>Inicio</Link></li>
-        <li><a href="#contact"><span className="link-icon">📞</span>Contacto</a></li>
-        <li><a href="#perfumes"><span className="link-icon">🌸</span>Perfumes</a></li>
+        <li><Link to="/">Inicio</Link></li>
+        <li><Link to="/">Perfumes</Link></li>
+        <li><a href="#contact">Contacto</a></li>
       </ul>
       <div className="nav-actions">
-        <button type="button" className="action-btn">❤️ Favoritos</button>
-        <button type="button" className="action-btn action-config" onClick={handleConfig}>
-          <span className="link-icon">👤</span>Mi cuenta
-        </button>
-        <button type="button" className="action-btn">🛒 Carrito</button>
-        {usuario && (
-          <button type="button" className="action-btn action-logout" onClick={handleLogout}>
-            <span className="link-icon">🚪</span>Cerrar sesión
-          </button>
+        {usuario ? (
+          <>
+            <Link to="/configuracion" className="action-btn action-primary">
+              <span className="link-icon">👤</span>Mi cuenta
+            </Link>
+            <button type="button" className="action-btn action-logout" onClick={handleLogout}>
+              <span className="link-icon">🚪</span>Cerrar sesión
+            </button>
+          </>
+        ) : (
+          <>
+            <Link to="/login" className="action-btn action-primary">
+              <span className="link-icon">🔐</span>Iniciar sesión
+            </Link>
+            <Link to="/crearcuenta" className="action-btn action-secondary">
+              <span className="link-icon">✒️</span>Registrarse
+            </Link>
+          </>
         )}
       </div>
     </nav>

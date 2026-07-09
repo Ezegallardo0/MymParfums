@@ -2,8 +2,8 @@
 :root {
   color-scheme: light;
   font-family: "Cormorant Garamond", serif, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background-color: #ede8e2;
-  color: #31251e;
+  background-color: #E8EBFF;
+  color: #002030;
 }
 
 * {
@@ -17,8 +17,8 @@ html, body, #root {
 
 body {
   margin: 0;
-  background: linear-gradient(180deg, #efebe6 0%, #e8e2dc 100%);
-  color: #31251e;
+  background: linear-gradient(180deg, #E8EBFF 0%, #D1FBE1 100%);
+  color: #002030;
 }
 
 a {
