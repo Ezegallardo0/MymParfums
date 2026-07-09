@@ -14,14 +14,15 @@ const CrearCuenta = () => {
   const isValidEmail = (value) => /@(gmail|hotmail)\.com$/i.test(value);
 
   const handleSubmit = () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-
     if (!nombre.trim() || !apellido.trim()) {
       setError("Ingresa tu nombre y apellido.");
       return;
     }
-    if (!isValidEmail(normalizedEmail)) {
+    if (!rol) {
+      setError("Selecciona tu rol dentro de la empresa.");
+      return;
+    }
+    if (!isValidEmail(email)) {
       setError("El correo debe ser @gmail.com o @hotmail.com");
       return;
     }
@@ -30,23 +31,15 @@ const CrearCuenta = () => {
       return;
     }
 
-    if (users.some((user) => user.email === normalizedEmail)) {
-      setError("El correo ya está registrado.");
-      return;
-    }
-
-    const newUser = {
-      nombre: nombre.trim(),
-      apellido: apellido.trim(),
-      rol: users.length === 0 ? "Administrador" : "Cliente",
-      email: normalizedEmail,
-      phone,
-      password,
-    };
-
-    localStorage.setItem("users", JSON.stringify([...users, newUser]));
-    const { password: _, ...sessionUser } = newUser;
-    localStorage.setItem("usuario", JSON.stringify(sessionUser));
+    localStorage.setItem(
+      "usuario",
+      JSON.stringify({
+        nombre: nombre.trim(),
+        apellido: apellido.trim(),
+        email: email.trim().toLowerCase(),
+        phone,
+      }),
+    );
 
     navigate("/");
   };
