@@ -11,7 +11,10 @@ const Login = () => {
   const isValidEmail = (value) => /@(gmail|hotmail)\.com$/i.test(value);
 
   const handleSubmit = () => {
-    if (!isValidEmail(email)) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+
+    if (!isValidEmail(normalizedEmail)) {
       setError("El correo debe ser @gmail.com o @hotmail.com");
       return;
     }
@@ -20,15 +23,18 @@ const Login = () => {
       return;
     }
 
-    localStorage.setItem(
-      "usuario",
-      JSON.stringify({
-        nombre: "Tobias",
-        rol: "admin",
-        email,
-      }),
-    );
+    const user = users.find((userItem) => userItem.email === normalizedEmail);
+    if (!user) {
+      setError("Este correo no está registrado.");
+      return;
+    }
+    if (user.password !== password) {
+      setError("Contraseña inválida.");
+      return;
+    }
 
+    const { password: _, ...sessionUser } = user;
+    localStorage.setItem("usuario", JSON.stringify(sessionUser));
     navigate("/");
   };
 

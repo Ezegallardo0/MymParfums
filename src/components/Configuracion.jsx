@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import "../styles/configuracion.css";
 
@@ -7,6 +7,12 @@ const sections = [
   { id: "seguridad", label: "Seguridad", icon: "bx-lock-alt" },
   { id: "preferencias", label: "Preferencias", icon: "bx-slider" },
   { id: "acerca", label: "Acerca", icon: "bx-info-circle" },
+];
+
+const allowedRoles = [
+  "Administrador",
+  "Socio",
+  "Vendedor",
 ];
 
 const Configuracion = () => {
@@ -20,6 +26,10 @@ const Configuracion = () => {
 
   if (!usuario) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!allowedRoles.includes(usuario.rol)) {
+    return <Navigate to="/" replace />;
   }
 
   const handleSave = (event) => {

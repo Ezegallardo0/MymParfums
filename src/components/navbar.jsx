@@ -30,11 +30,13 @@ const Menu = () => {
         <ul className="nav-actions nav-right">
           {usuario ? (
             <>
-              <li>
-                <Link to="/configuracion" className="action-btn action-primary">
-                  <i className="bx bx-user-circle" />Mi cuenta
-                </Link>
-              </li>
+              {['Administrador', 'Socio', 'Vendedor'].includes(usuario.rol) && (
+                <li>
+                  <Link to="/configuracion" className="action-btn action-primary">
+                    <i className="bx bx-user-circle" />Mi cuenta
+                  </Link>
+                </li>
+              )}
               <li>
                 <button type="button" className="action-btn action-logout" onClick={handleLogout}>
                   <i className="bx bx-log-out" />Cerrar sesión
