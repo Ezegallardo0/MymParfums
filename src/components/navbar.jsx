@@ -14,7 +14,6 @@ const Menu = () => {
     <header className="site-header">
       <nav className="nav-bar">
         <div className="brand-bar">
-          <i className="bx bx-droplet brand-icon" />
           <div className="brand-copy">
             <h1>Mym Parfums.</h1>
             <p>Fragancias formales con un toque azul</p>
