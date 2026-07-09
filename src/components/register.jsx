@@ -18,10 +18,6 @@ const CrearCuenta = () => {
       setError("Ingresa tu nombre y apellido.");
       return;
     }
-    if (!rol) {
-      setError("Selecciona tu rol dentro de la empresa.");
-      return;
-    }
     if (!isValidEmail(email)) {
       setError("El correo debe ser @gmail.com o @hotmail.com");
       return;
