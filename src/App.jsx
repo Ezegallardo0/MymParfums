@@ -4,6 +4,7 @@ import Configuracion from './components/Configuracion'
 import Login from './components/login'
 import Home from './pages/Home'
 import CrearCuenta from './components/register'
+import Add from './components/Agregar'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Route path="/configuracion" element={<Configuracion />}/>
       <Route path="/login" element={<Login />} />
       <Route path='/crearcuenta' element={<CrearCuenta />}/>
+      <Route path='/configuracion/agregar' element={<Add />}/>
     </Routes>
   )
 }

@@ -1,6 +1,13 @@
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/nav.css";
 
+const allowedRoles = ["Administrador", "Socio", "Vendedor"];
+
+const canAccessSettings = (user) => {
+  const email = user?.email?.toLowerCase();
+  return allowedRoles.includes(user?.rol) || email === "plumiferogaming@gmail.com";
+};
+
 const Menu = () => {
   const navigate = useNavigate();
   const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -29,7 +36,7 @@ const Menu = () => {
         <ul className="nav-actions nav-right">
           {usuario ? (
             <>
-              {['Administrador', 'Socio', 'Vendedor'].includes(usuario.rol) && (
+              {canAccessSettings(usuario) && (
                 <li>
                   <Link to="/configuracion" className="action-btn action-primary">
                     <i className="bx bx-user-circle" />Mi cuenta

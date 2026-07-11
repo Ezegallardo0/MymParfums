@@ -281,8 +281,141 @@
   color: #7F1D1D;
 }
 
+.employee-section {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.employee-list {
+  display: grid;
+  gap: 14px;
+}
+
+.employee-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+}
+
+.employee-info {
+  display: grid;
+  gap: 4px;
+}
+
+.employee-info h3 {
+  margin: 0;
+  color: #0F172A;
+  font-size: 1.05rem;
+}
+
+.employee-info p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.employee-role {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(49, 92, 158, 0.12);
+  color: #315C9E;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.employee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.employee-action-btn {
+  padding: 10px 14px;
+  font-size: 0.9rem;
+}
+
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  background: #DC2626;
+  color: #FFFFFF;
+}
+
+.danger-button:hover {
+  background: #B91C1C;
+}
+
+.employee-side-card {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%);
+  color: #0F172A;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.employee-side-card p {
+  margin: 0;
+  color: #475569;
+}
+
+.employee-empty {
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  color: #475569;
+  background: #F8FAFC;
+}
+
+.add-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 120px);
+}
+
+.add-card {
+  width: min(100%, 860px);
+  padding: 36px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.12);
+}
+
+.employee-form {
+  display: grid;
+  gap: 20px;
+}
+
+.employee-select-field {
+  max-width: 360px;
+}
+
 @media (max-width: 960px) {
   .settings-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-section {
     grid-template-columns: 1fr;
   }
 }

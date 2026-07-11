@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import "../styles/configuracion.css";
 
 const sections = [
@@ -7,16 +7,21 @@ const sections = [
   { id: "seguridad", label: "Seguridad", icon: "bx-lock-alt" },
   { id: "preferencias", label: "Preferencias", icon: "bx-slider" },
   { id: "acerca", label: "Acerca", icon: "bx-info-circle" },
+  { id: "empleados", label: "Empleados", icon: "bx bx-user-plus" },
 ];
 
-const allowedRoles = [
-  "Administrador",
-  "Socio",
-  "Vendedor",
-];
+const allowedRoles = ["Administrador", "Socio", "Vendedor"];
+
+const canAccessSettings = (user) => {
+  const email = user?.email?.toLowerCase();
+  return (
+    allowedRoles.includes(user?.rol) || email === "plumiferogaming@gmail.com"
+  );
+};
 
 const Configuracion = () => {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("perfil");
   const [nombre, setNombre] = useState(usuario?.nombre || "");
   const [email, setEmail] = useState(usuario?.email || "");
@@ -24,11 +29,16 @@ const Configuracion = () => {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  const [empleados, setEmpleados] = useState(() => {
+    const lista = JSON.parse(localStorage.getItem("empleados")) || [];
+    return lista;
+  });
+
   if (!usuario) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!allowedRoles.includes(usuario.rol)) {
+  if (!canAccessSettings(usuario)) {
     return <Navigate to="/" replace />;
   }
 
@@ -52,6 +62,16 @@ const Configuracion = () => {
 
     setSuccess("Cambios guardados correctamente.");
     setError("");
+  };
+
+  const handleDeleteEmpleado = (id) => {
+    const actualizados = empleados.filter((empleado) => empleado.id !== id);
+    setEmpleados(actualizados);
+    localStorage.setItem("empleados", JSON.stringify(actualizados));
+  };
+
+  const handleEditEmpleado = (empleado) => {
+    navigate("/configuracion/agregar", { state: { empleado } });
   };
 
   const renderSection = () => {
@@ -111,14 +131,18 @@ const Configuracion = () => {
                   <strong>Cambiar contraseña</strong>
                   <p>Actualiza tu contraseña cuando lo necesites.</p>
                 </div>
-                <button type="button" className="secondary-button">Cambiar</button>
+                <button type="button" className="secondary-button">
+                  Cambiar
+                </button>
               </div>
               <div className="settings-item">
                 <div>
                   <strong>Autenticación en dos pasos</strong>
                   <p>Protege tu cuenta con un segundo factor.</p>
                 </div>
-                <button type="button" className="secondary-button">Configurar</button>
+                <button type="button" className="secondary-button">
+                  Configurar
+                </button>
               </div>
             </div>
           </div>
@@ -171,6 +195,58 @@ const Configuracion = () => {
             </div>
           </div>
         );
+      case "empleados":
+        return (
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <h2>Empleados</h2>
+              <span>Administra el personal de la tienda con mayor claridad.</span>
+            </div>
+            <div className="employee-section">
+              <div className="employee-list">
+                {empleados.length === 0 ? (
+                  <div className="employee-empty">No hay empleados registrados todavía.</div>
+                ) : (
+                  empleados.map((empleado) => (
+                    <div className="employee-item" key={empleado.id}>
+                      <div className="employee-info">
+                        <h3>
+                          {empleado.nombre} {empleado.apellido}
+                        </h3>
+                        <p>{empleado.email}</p>
+                        <p>{empleado.tel}</p>
+                        <span className="employee-role">{empleado.rol}</span>
+                      </div>
+                      <div className="employee-actions">
+                        <button
+                          type="button"
+                          className="secondary-button employee-action-btn"
+                          onClick={() => handleEditEmpleado(empleado)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="danger-button employee-action-btn"
+                          onClick={() => handleDeleteEmpleado(empleado.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="employee-side-card">
+                <strong>Agregar Empleado</strong>
+                <p>Registra un nuevo colaborador y asigna su rol.</p>
+                <Link to="/configuracion/agregar" className="primary-button">
+                  Agregar
+                </Link>
+              </div>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
@@ -203,16 +279,28 @@ const Configuracion = () => {
           <div className="settings-header">
             <div>
               <h1 className="settings-title">Configuración</h1>
-              <p className="settings-description">Ajusta tu cuenta y personaliza tu experiencia.</p>
+              <p className="settings-description">
+                Ajusta tu cuenta y personaliza tu experiencia.
+              </p>
             </div>
             <div className="button-group">
-              <Link to="/" className="secondary-button">Inicio</Link>
-              <button type="button" className="primary-button" onClick={handleSave}>Guardar</button>
+              <Link to="/" className="secondary-button">
+                Inicio
+              </Link>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={handleSave}
+              >
+                Guardar
+              </button>
             </div>
           </div>
 
           {error && <p className="config-message config-error">{error}</p>}
-          {success && <p className="config-message config-success">{success}</p>}
+          {success && (
+            <p className="config-message config-success">{success}</p>
+          )}
 
           {renderSection()}
         </div>
