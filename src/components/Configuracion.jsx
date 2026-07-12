@@ -190,7 +190,7 @@ const Configuracion = () => {
               </div>
               <div className="about-item">
                 <strong>Soporte</strong>
-                <span>soporte@mymparfums.com</span>
+                <span>ezequieljoelgallardo@gmail.com</span>
               </div>
             </div>
           </div>
