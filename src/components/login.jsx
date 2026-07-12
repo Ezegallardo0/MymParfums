@@ -2,20 +2,36 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/login.css";
 
+const parseResponse = async (response) => {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+};
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetError, setResetError] = useState("");
   const navigate = useNavigate();
 
-  const isValidEmail = (value) => /@(gmail|hotmail)\.com$/i.test(value);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
 
-  const handleSubmit = () => {
     const normalizedEmail = email.trim().toLowerCase();
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-
-    if (!isValidEmail(normalizedEmail)) {
-      setError("El correo debe ser @gmail.com o @hotmail.com");
+    if (!normalizedEmail) {
+      setError("Ingresa tu correo");
       return;
     }
     if (!password.trim()) {
@@ -23,26 +39,58 @@ const Login = () => {
       return;
     }
 
-    const user = users.find((userItem) => userItem.email === normalizedEmail);
-    if (!user) {
-      setError("Este correo no está registrado.");
-      return;
+    try {
+      const response = await fetch("http://localhost:3000/api/empleados/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail, password }),
+      });
+
+      const data = await parseResponse(response);
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo iniciar sesión");
+      }
+
+      localStorage.setItem("usuario", JSON.stringify(data.empleado));
+      navigate("/");
+    } catch (loginError) {
+      setError(loginError.message || "No se pudo iniciar sesión");
     }
-    if (user.password !== password) {
-      setError("Contraseña inválida.");
+  };
+
+  const handleRequestReset = async () => {
+    setResetError("");
+    setResetMessage("");
+
+    const normalizedEmail = resetEmail.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setResetError("Ingresa un correo para recuperar tu acceso");
       return;
     }
 
-    const { password: _, ...sessionUser } = user;
-    localStorage.setItem("usuario", JSON.stringify(sessionUser));
-    navigate("/");
+    try {
+      const response = await fetch("http://localhost:3000/api/empleados/request-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+
+      const data = await parseResponse(response);
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo enviar el enlace");
+      }
+
+      setResetMessage(data.message || "Revisa tu correo para continuar");
+    } catch (resetError) {
+      setResetError(resetError.message || "No se pudo enviar el enlace");
+    }
   };
 
   return (
     <main className="page-auth">
       <section className="auth-card">
         <h1 className="auth-title">Iniciar Sesión</h1>
-        <div className="auth-form">
+        <form className="auth-form" onSubmit={handleSubmit}>
           <input
             className="auth-input"
             type="email"
@@ -64,10 +112,38 @@ const Login = () => {
             }}
           />
           {error && <p className="form-error">{error}</p>}
-          <button className="primary-btn" type="button" onClick={handleSubmit}>
+          <button className="primary-btn" type="submit">
             Enviar
           </button>
+        </form>
+
+        <div className="auth-recovery">
+          <button type="button" className="auth-link-button" onClick={() => setIsResetting((value) => !value)}>
+            {isResetting ? "Ocultar recuperación" : "¿Olvidaste tu contraseña?"}
+          </button>
+
+          {isResetting && (
+            <div className="recovery-box">
+              <input
+                className="auth-input"
+                type="email"
+                placeholder="Tu correo para recuperar acceso"
+                value={resetEmail}
+                onChange={(event) => {
+                  setResetEmail(event.target.value);
+                  if (resetError) setResetError("");
+                  if (resetMessage) setResetMessage("");
+                }}
+              />
+              <button type="button" className="secondary-btn" onClick={handleRequestReset}>
+                Enviar enlace
+              </button>
+              {resetError && <p className="form-error">{resetError}</p>}
+              {resetMessage && <p className="form-success">{resetMessage}</p>}
+            </div>
+          )}
         </div>
+
         <p className="auth-footer">
           ¿No tienes cuenta? | <Link className="auth-link" to="/crearcuenta">Crea una Ahora</Link>
         </p>

@@ -1,18 +1,48 @@
 [
   {
-    "id": "1783831960119",
-    "nombre": "Test",
-    "apellido": "User",
-    "email": "test@example.com",
-    "tel": "123",
-    "rol": "Ventas"
+    "id": "1783832771542",
+    "nombre": "Ana",
+    "apellido": "Perez",
+    "email": "ana@example.com",
+    "tel": "123456",
+    "rol": "Administrador",
+    "resetToken": "1f632bc9af374ee7852ffa1d0caf99e1612a96242a2270f3",
+    "resetTokenExpiresAt": 1783837200097
   },
   {
-    "id": "1783832314530",
+    "id": "1783833905681",
     "nombre": "Ezequiel",
     "apellido": "Gallardo",
-    "email": "plumiferogaming@gmail.com",
+    "email": "agus@gmail.com",
+    "tel": "16767",
+    "rol": "Ventas",
+    "passwordHash": "8db95455d0a34f4ab02bd04831e0c0a4:0921d02176d4717f6781b7cc000dcc05ada4fb76606e5a9d8443700f7e36c9edc45667e4d27a60880c474a9aabd75234b8964ebfa257bb7428211fd9bc132d0a",
+    "resetToken": null,
+    "resetTokenExpiresAt": null,
+    "createdAt": "2026-07-12T05:25:05.718Z"
+  },
+  {
+    "id": "1783833966590",
+    "nombre": "jeg",
+    "apellido": "gh",
+    "email": "test@gmail.com",
     "tel": "1234",
-    "rol": "Administrador"
+    "rol": "Ventas",
+    "passwordHash": "5a4dac8e52244483807d0c89269b8dfd:c32bb40c77258b4fe8fd48fffa9c32be94d2a3db0d1eadf1f8b56a48825234a621e988d2e38dbd1327a31b94691a950a54ec6e41b0780131f2fba20f2352e5e3",
+    "resetToken": null,
+    "resetTokenExpiresAt": null,
+    "createdAt": "2026-07-12T05:26:06.626Z"
+  },
+  {
+    "id": "1783834314608",
+    "nombre": "pepito",
+    "apellido": "asd",
+    "email": "pepi@gmail.com",
+    "tel": "234",
+    "rol": "Administrador",
+    "passwordHash": "1fb23ef04bfeaf7ad274d96193543977:05e9efb505ed31d1119d7c95034d0b087477e7c5774190d06e14e93ef5f7e6e78a5d5dc020dc0119b5f2b7837eca2b9d9d5ccd40d1eb9ffaa49a5c7e5d032c05",
+    "resetToken": null,
+    "resetTokenExpiresAt": null,
+    "createdAt": "2026-07-12T05:31:54.645Z"
   }
 ]

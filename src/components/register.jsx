@@ -2,6 +2,19 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/register.css";
 
+const parseResponse = async (response) => {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+};
+
 const CrearCuenta = () => {
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
@@ -13,7 +26,9 @@ const CrearCuenta = () => {
 
   const isValidEmail = (value) => /@(gmail|hotmail)\.com$/i.test(value);
 
-  const handleSubmit = () => {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
     if (!nombre.trim() || !apellido.trim()) {
       setError("Ingresa tu nombre y apellido.");
       return;
@@ -27,17 +42,30 @@ const CrearCuenta = () => {
       return;
     }
 
-    localStorage.setItem(
-      "usuario",
-      JSON.stringify({
-        nombre: nombre.trim(),
-        apellido: apellido.trim(),
-        email: email.trim().toLowerCase(),
-        phone,
-      }),
-    );
+    try {
+      const response = await fetch("http://localhost:3000/api/empleados", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          apellido: apellido.trim(),
+          email: email.trim().toLowerCase(),
+          tel: phone,
+          rol: "Ventas",
+          password: password.trim(),
+        }),
+      });
 
-    navigate("/");
+      const data = await parseResponse(response);
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo crear la cuenta");
+      }
+
+      localStorage.setItem("usuario", JSON.stringify(data.empleado));
+      navigate("/");
+    } catch (saveError) {
+      setError(saveError.message || "No se pudo crear la cuenta");
+    }
   };
 
   return (
@@ -93,7 +121,7 @@ const CrearCuenta = () => {
             }}
           />
           {error && <p className="form-error">{error}</p>}
-          <button className="primary-btn" type="button" onClick={handleSubmit}>
+          <button className="primary-btn" type="submit" onClick={handleSubmit}>
             Enviar
           </button>
         </div>

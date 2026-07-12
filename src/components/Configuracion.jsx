@@ -2,6 +2,19 @@
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import "../styles/configuracion.css";
 
+const parseResponse = async (response) => {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+};
+
 const sections = [
   { id: "perfil", label: "Perfil", icon: "bx-user" },
   { id: "seguridad", label: "Seguridad", icon: "bx-lock-alt" },
@@ -14,9 +27,7 @@ const allowedRoles = ["Administrador", "Socio", "Vendedor"];
 
 const canAccessSettings = (user) => {
   const email = user?.email?.toLowerCase();
-  return (
-    allowedRoles.includes(user?.rol) || email === "plumiferogaming@gmail.com"
-  );
+  return allowedRoles.includes(user?.rol) || email === "plumiferogaming@gmail.com";
 };
 
 const Configuracion = () => {
@@ -30,6 +41,14 @@ const Configuracion = () => {
   const [error, setError] = useState("");
   const [empleados, setEmpleados] = useState([]);
   const [empleadosError, setEmpleadosError] = useState("");
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const API_URL = "http://localhost:3000/api/empleados";
 
   const fetchEmpleados = async () => {
@@ -58,6 +77,11 @@ const Configuracion = () => {
     return <Navigate to="/" replace />;
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem("usuario");
+    navigate("/");
+  };
+
   const handleSave = (event) => {
     event.preventDefault();
     if (!nombre.trim() || !email.trim()) {
@@ -78,6 +102,45 @@ const Configuracion = () => {
 
     setSuccess("Cambios guardados correctamente.");
     setError("");
+  };
+
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordMessage("");
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError("Completa todos los campos de contraseña");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("Las nuevas contraseñas no coinciden");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/change-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: usuario.email,
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      });
+
+      const data = await parseResponse(response);
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo cambiar la contraseña");
+      }
+
+      setPasswordMessage(data.message || "Contraseña cambiada correctamente");
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setShowPasswordForm(false);
+    } catch (passwordErrorState) {
+      setPasswordError(passwordErrorState.message || "No se pudo cambiar la contraseña");
+    }
   };
 
   const handleDeleteEmpleado = async (id) => {
@@ -159,10 +222,50 @@ const Configuracion = () => {
                   <strong>Cambiar contraseña</strong>
                   <p>Actualiza tu contraseña cuando lo necesites.</p>
                 </div>
-                <button type="button" className="secondary-button">
-                  Cambiar
+                <button type="button" className="secondary-button" onClick={() => setShowPasswordForm((value) => !value)}>
+                  {showPasswordForm ? "Ocultar" : "Cambiar"}
                 </button>
               </div>
+              {showPasswordForm && (
+                <form className="security-form" onSubmit={handlePasswordSubmit}>
+                  <div className="settings-grid">
+                    <div className="settings-field">
+                      <label>Contraseña actual</label>
+                      <input
+                        className="config-input"
+                        type="password"
+                        value={passwordForm.currentPassword}
+                        onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })}
+                      />
+                    </div>
+                    <div className="settings-field">
+                      <label>Nueva contraseña</label>
+                      <input
+                        className="config-input"
+                        type="password"
+                        value={passwordForm.newPassword}
+                        onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })}
+                      />
+                    </div>
+                    <div className="settings-field">
+                      <label>Confirmar nueva contraseña</label>
+                      <input
+                        className="config-input"
+                        type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })}
+                      />
+                    </div>
+                  </div>
+                  {passwordError && <p className="config-message config-error">{passwordError}</p>}
+                  {passwordMessage && <p className="config-message config-success">{passwordMessage}</p>}
+                  <div className="button-group">
+                    <button type="submit" className="primary-button">
+                      Guardar nueva contraseña
+                    </button>
+                  </div>
+                </form>
+              )}
               <div className="settings-item">
                 <div>
                   <strong>Autenticación en dos pasos</strong>
@@ -315,20 +418,18 @@ const Configuracion = () => {
               <Link to="/" className="secondary-button">
                 Inicio
               </Link>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={handleSave}
-              >
+              <button type="button" className="secondary-button cerrar" onClick={handleLogout}>
+                Cerrar sesión
+              </button>
+              <button type="button" className="primary-button" onClick={handleSave}>
                 Guardar
               </button>
             </div>
           </div>
 
           {error && <p className="config-message config-error">{error}</p>}
-          {success && (
-            <p className="config-message config-success">{success}</p>
-          )}
+          {success && <p className="config-message config-success">{success}</p>}
+          {empleadosError && <p className="config-message config-error">{empleadosError}</p>}
 
           {renderSection()}
         </div>

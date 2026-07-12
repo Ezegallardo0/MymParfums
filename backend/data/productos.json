@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "nombre": "Aqua Noir",
+    "precio": 129.99,
+    "img": "https://placehold.co/600x600/002030/E8EBFF?text=Aqua+Noir"
+  },
+  {
+    "id": 2,
+    "nombre": "Velvet Bloom",
+    "precio": 149.5,
+    "img": "https://placehold.co/600x600/3D5666/E8EBFF?text=Velvet+Bloom"
+  },
+  {
+    "id": 3,
+    "nombre": "Midnight Blue",
+    "precio": 179.0,
+    "img": "https://placehold.co/600x600/5B7C99/E8EBFF?text=Midnight+Blue"
+  }
+]

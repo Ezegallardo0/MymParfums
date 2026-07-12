@@ -2,6 +2,19 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/configuracion.css";
 
+const parseResponse = async (response) => {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+};
+
 const Add = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -11,6 +24,7 @@ const Add = () => {
   const [email, setEmail] = useState(empleadoEditar?.email || "");
   const [tel, setTel] = useState(empleadoEditar?.tel || "");
   const [rol, setRol] = useState(empleadoEditar?.rol || "");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const API_URL = "http://localhost:3000/api/empleados";
 
@@ -22,12 +36,18 @@ const Add = () => {
       return;
     }
 
+    if (!empleadoEditar && !password.trim()) {
+      setError("El administrador debe asignar una contraseña para el empleado");
+      return;
+    }
+
     const payload = {
       nombre: nombre.trim(),
       apellido: apellido.trim(),
       email: email.trim(),
       tel: tel.trim(),
       rol,
+      ...(password.trim() ? { password: password.trim() } : {}),
     };
 
     try {
@@ -40,8 +60,9 @@ const Add = () => {
         },
       );
 
+      const data = await parseResponse(response);
       if (!response.ok) {
-        throw new Error("Error guardando empleado");
+        throw new Error(data.error || "Error guardando empleado");
       }
 
       navigate("/configuracion");
@@ -115,6 +136,17 @@ const Add = () => {
                 <option value="Ventas">Ventas</option>
               </select>
             </div>
+            <div className="settings-field employee-select-field">
+              <label>{empleadoEditar ? "Nueva contraseña (opcional)" : "Contraseña del empleado"}</label>
+              <input
+                className="config-input"
+                type="password"
+                placeholder={empleadoEditar ? "Dejar vacío para conservar la actual" : "Define la contraseña del empleado"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            {error && <p className="config-message config-error">{error}</p>}
             <div className="button-group">
               <button type="button" className="secondary-button" onClick={() => navigate("/configuracion")}>
                 Cancelar

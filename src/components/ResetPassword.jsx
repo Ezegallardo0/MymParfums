@@ -1,58 +1,44 @@
-import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/login.css";
 
-const API_URL = "http://localhost:3000/api/empleados";
+const parseResponse = async (response) => {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+};
 
 const ResetPassword = () => {
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const token = searchParams.get("token") || "";
-  const [email, setEmail] = useState("");
+  const params = new URLSearchParams(location.search);
+  const token = params.get("token") || "";
+  const email = params.get("email") || "";
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleRequestReset = async (event) => {
-    event.preventDefault();
-    setError("");
-    setMessage("");
-
-    if (!email.trim()) {
-      setError("Ingresa el correo del empleado");
-      return;
+  useEffect(() => {
+    if (!token || !email) {
+      setError("El enlace de recuperación no es válido");
     }
+  }, [token, email]);
 
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`${API_URL}/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "No se pudo enviar la solicitud");
-      }
-
-      setMessage(data.message || "Revisa tu correo para continuar");
-    } catch (submitError) {
-      setError(submitError.message || "No se pudo completar la solicitud");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleConfirmReset = async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
     setMessage("");
 
     if (!newPassword.trim() || !confirmPassword.trim()) {
-      setError("Completa ambos campos");
+      setError("Completa ambas contraseñas");
       return;
     }
 
@@ -61,82 +47,50 @@ const ResetPassword = () => {
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      const response = await fetch(`${API_URL}/reset-password/confirm`, {
+      const response = await fetch("http://localhost:3000/api/empleados/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword }),
+        body: JSON.stringify({ email, token, newPassword }),
       });
 
-      const data = await response.json();
+      const data = await parseResponse(response);
       if (!response.ok) {
         throw new Error(data.error || "No se pudo actualizar la contraseña");
       }
 
-      setMessage(data.message || "Contraseña actualizada");
+      setMessage(data.message || "Contraseña actualizada correctamente");
       setTimeout(() => navigate("/login"), 1200);
-    } catch (submitError) {
-      setError(submitError.message || "No se pudo actualizar la contraseña");
-    } finally {
-      setIsSubmitting(false);
+    } catch (resetError) {
+      setError(resetError.message || "No se pudo actualizar la contraseña");
     }
   };
 
   return (
     <main className="page-auth">
       <section className="auth-card">
-        <h1 className="auth-title">{token ? "Restablecer contraseña" : "Recuperar contraseña"}</h1>
-        {token ? (
-          <form className="auth-form" onSubmit={handleConfirmReset}>
-            <input
-              className="auth-input"
-              type="password"
-              placeholder="Nueva contraseña"
-              value={newPassword}
-              onChange={(event) => {
-                setNewPassword(event.target.value);
-                if (error) setError("");
-              }}
-            />
-            <input
-              className="auth-input"
-              type="password"
-              placeholder="Confirmar contraseña"
-              value={confirmPassword}
-              onChange={(event) => {
-                setConfirmPassword(event.target.value);
-                if (error) setError("");
-              }}
-            />
-            {error && <p className="form-error">{error}</p>}
-            {message && <p className="form-success">{message}</p>}
-            <button className="primary-btn" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Guardando..." : "Actualizar contraseña"}
-            </button>
-          </form>
-        ) : (
-          <form className="auth-form" onSubmit={handleRequestReset}>
-            <input
-              className="auth-input"
-              type="email"
-              placeholder="Correo del empleado"
-              value={email}
-              onChange={(event) => {
-                setEmail(event.target.value);
-                if (error) setError("");
-              }}
-            />
-            {error && <p className="form-error">{error}</p>}
-            {message && <p className="form-success">{message}</p>}
-            <button className="primary-btn" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Enviando..." : "Enviar enlace"}
-            </button>
-          </form>
-        )}
-        <p className="auth-footer">
-          <Link className="auth-link" to="/login">Volver al inicio de sesión</Link>
-        </p>
+        <h1 className="auth-title">Restablecer contraseña</h1>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="Nueva contraseña"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+          />
+          <input
+            className="auth-input"
+            type="password"
+            placeholder="Confirmar contraseña"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+          />
+          {error && <p className="form-error">{error}</p>}
+          {message && <p className="form-success">{message}</p>}
+          <button className="primary-btn" type="submit">
+            Guardar nueva contraseña
+          </button>
+        </form>
       </section>
     </main>
   );

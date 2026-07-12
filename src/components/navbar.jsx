@@ -1,4 +1,4 @@
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import "../styles/nav.css";
 
 const allowedRoles = ["Administrador", "Socio", "Vendedor"];
@@ -9,13 +9,7 @@ const canAccessSettings = (user) => {
 };
 
 const Menu = () => {
-  const navigate = useNavigate();
   const usuario = JSON.parse(localStorage.getItem("usuario"));
-
-  const handleLogout = () => {
-    localStorage.removeItem("usuario");
-    navigate("/");
-  };
 
   return (
     <header className="site-header">
@@ -27,36 +21,42 @@ const Menu = () => {
           </div>
         </div>
 
-        <ul className="nav-links nav-center">
-          <li><Link to="/"><i className="bx bx-home-alt" />Inicio</Link></li>
-          <li><Link to="/"><i className="bx bx-gift" />Perfumes</Link></li>
-          <li><a href="#contact"><i className="bx bx-envelope" />Contacto</a></li>
-        </ul>
+        <div className="nav-controls">
+          <ul className="nav-links nav-center">
+            <li><Link to="/"><i className="bx bx-home-alt" />Inicio</Link></li>
+            <li><Link to="/"><i className="bx bx-gift" />Perfumes</Link></li>
+            <li><a href="#contact"><i className="bx bx-envelope" />Contacto</a></li>
+          </ul>
 
-        <ul className="nav-actions nav-right">
-          {usuario ? (
-            <>
-              {canAccessSettings(usuario) && (
+          <div className="nav-actions-row">
+            <ul className="nav-actions nav-right">
+              {usuario ? (
+                <>
+                  {(usuario?.rol === "Administrador" || usuario?.rol === "Socio") && (
+                    <li>
+                      <Link to="/card"><button type="button" className="action-btn action-secondary add-product-btn">
+                        <i className="bx bx-plus" />Nuevo Producto
+                      </button></Link>
+                    </li>
+                  )}
+                  {canAccessSettings(usuario) && (
+                    <li>
+                      <Link to="/configuracion" className="action-btn action-primary">
+                        <i className="bx bx-user-circle" />Mi cuenta
+                      </Link>
+                    </li>
+                  )}
+                </>
+              ) : (
                 <li>
-                  <Link to="/configuracion" className="action-btn action-primary">
-                    <i className="bx bx-user-circle" />Mi cuenta
+                  <Link to="/login" className="single-action-btn">
+                    <i className="bx bx-log-in" />Iniciar sesión
                   </Link>
                 </li>
               )}
-              <li>
-                <button type="button" className="action-btn action-logout" onClick={handleLogout}>
-                  <i className="bx bx-log-out" />Cerrar sesión
-                </button>
-              </li>
-            </>
-          ) : (
-            <li>
-              <Link to="/login" className="single-action-btn">
-                <i className="bx bx-log-in" />Iniciar sesión
-              </Link>
-            </li>
-          )}
-        </ul>
+            </ul>
+          </div>
+        </div>
       </nav>
     </header>
   );
