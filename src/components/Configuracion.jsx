@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import "../styles/configuracion.css";
 
@@ -28,11 +28,27 @@ const Configuracion = () => {
   const [phone, setPhone] = useState(usuario?.phone || "");
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [empleados, setEmpleados] = useState([]);
+  const [empleadosError, setEmpleadosError] = useState("");
+  const API_URL = "http://localhost:3000/api/empleados";
 
-  const [empleados, setEmpleados] = useState(() => {
-    const lista = JSON.parse(localStorage.getItem("empleados")) || [];
-    return lista;
-  });
+  const fetchEmpleados = async () => {
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) {
+        throw new Error("No se pudo cargar la lista de empleados");
+      }
+      const data = await response.json();
+      setEmpleados(data);
+      setEmpleadosError("");
+    } catch (fetchError) {
+      setEmpleadosError(fetchError.message || "Error al cargar empleados");
+    }
+  };
+
+  useEffect(() => {
+    fetchEmpleados();
+  }, []);
 
   if (!usuario) {
     return <Navigate to="/login" replace />;
@@ -64,10 +80,22 @@ const Configuracion = () => {
     setError("");
   };
 
-  const handleDeleteEmpleado = (id) => {
-    const actualizados = empleados.filter((empleado) => empleado.id !== id);
-    setEmpleados(actualizados);
-    localStorage.setItem("empleados", JSON.stringify(actualizados));
+  const handleDeleteEmpleado = async (id) => {
+    const confirmDelete = window.confirm("¿Eliminar este empleado?");
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("No se pudo eliminar el empleado");
+      }
+      const actualizados = empleados.filter((empleado) => empleado.id !== id);
+      setEmpleados(actualizados);
+    } catch (deleteError) {
+      setError(deleteError.message || "Error al eliminar empleado");
+    }
   };
 
   const handleEditEmpleado = (empleado) => {

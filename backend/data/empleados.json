@@ -1,0 +1,18 @@
+[
+  {
+    "id": "1783831960119",
+    "nombre": "Test",
+    "apellido": "User",
+    "email": "test@example.com",
+    "tel": "123",
+    "rol": "Ventas"
+  },
+  {
+    "id": "1783832314530",
+    "nombre": "Ezequiel",
+    "apellido": "Gallardo",
+    "email": "plumiferogaming@gmail.com",
+    "tel": "1234",
+    "rol": "Administrador"
+  }
+]

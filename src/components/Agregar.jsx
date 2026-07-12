@@ -11,11 +11,18 @@ const Add = () => {
   const [email, setEmail] = useState(empleadoEditar?.email || "");
   const [tel, setTel] = useState(empleadoEditar?.tel || "");
   const [rol, setRol] = useState(empleadoEditar?.rol || "");
+  const [error, setError] = useState("");
+  const API_URL = "http://localhost:3000/api/empleados";
 
-  const guardarEmp = (e) => {
+  const guardarEmp = async (e) => {
     e.preventDefault();
-    const nuevoEmp = {
-      id: empleadoEditar?.id || Date.now(),
+
+    if (!nombre.trim() || !apellido.trim()) {
+      setError("Nombre y apellido son obligatorios");
+      return;
+    }
+
+    const payload = {
       nombre: nombre.trim(),
       apellido: apellido.trim(),
       email: email.trim(),
@@ -23,21 +30,24 @@ const Add = () => {
       rol,
     };
 
-    const empleados = JSON.parse(localStorage.getItem("empleados")) || [];
+    try {
+      const response = await fetch(
+        empleadoEditar ? `${API_URL}/${empleadoEditar.id}` : API_URL,
+        {
+          method: empleadoEditar ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
 
-    if (empleadoEditar) {
-      const index = empleados.findIndex((empleado) => empleado.id === empleadoEditar.id);
-      if (index >= 0) {
-        empleados[index] = nuevoEmp;
-      } else {
-        empleados.push(nuevoEmp);
+      if (!response.ok) {
+        throw new Error("Error guardando empleado");
       }
-    } else {
-      empleados.push(nuevoEmp);
-    }
 
-    localStorage.setItem("empleados", JSON.stringify(empleados));
-    navigate("/configuracion");
+      navigate("/configuracion");
+    } catch (saveError) {
+      setError(saveError.message || "No se pudo guardar el empleado");
+    }
   };
 
   return (
