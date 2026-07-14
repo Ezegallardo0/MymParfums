@@ -1,20 +1,23 @@
 [
   {
-    "id": 1,
-    "nombre": "Aqua Noir",
-    "precio": 129.99,
+    "id": 5,
+    "nombre": "wasa",
+    "precio": 29,
+    "stock": null,
     "img": "https://placehold.co/600x600/002030/E8EBFF?text=Aqua+Noir"
   },
   {
-    "id": 2,
-    "nombre": "Velvet Bloom",
-    "precio": 149.5,
-    "img": "https://placehold.co/600x600/3D5666/E8EBFF?text=Velvet+Bloom"
+    "id": 1,
+    "nombre": "wa",
+    "precio": 555,
+    "stock": null,
+    "img": "https://placehold.co/600x600/002030/E8EBFF?text=Aqua+Noir"
   },
   {
-    "id": 3,
-    "nombre": "Midnight Blue",
-    "precio": 179.0,
-    "img": "https://placehold.co/600x600/5B7C99/E8EBFF?text=Midnight+Blue"
+    "id": "1783993725295",
+    "nombre": "asdas",
+    "descripcion": "3",
+    "precio": 11,
+    "stock": null
   }
 ]
