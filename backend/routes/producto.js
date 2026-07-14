@@ -56,7 +56,7 @@ router.post("/", upload.single("imagen"),(req, res) => {
     stock: Number(req.body.stock),
     imagen: req.file
       ? `/uploads/${req.file.filename}`
-      : ""
+      : req.body.imagenUrl?.trim() || ""
   };
 
   productos.push(nuevoProducto);

@@ -43,9 +43,18 @@
 }
 
 .new-product-label {
-  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fdf2f8 0%, #eef2ff 100%);
+  color: #4c1d95;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 16px rgba(76, 29, 149, 0.12);
 }
 
 .new-product-input {
@@ -71,6 +80,33 @@
 .new-product-input:focus {
   border-color: #3d5666;
   box-shadow: 0 0 0 3px rgba(61, 86, 102, 0.14);
+}
+
+.new-product-file-input {
+  display: none;
+}
+
+.upload-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px dashed #9fb1be;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef3f8 100%);
+  color: #334155;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.upload-box:hover {
+  border-color: #3d5666;
+  transform: translateY(-1px);
+}
+
+.upload-icon {
+  font-size: 1.1rem;
 }
 
 .new-product-button {

@@ -8,6 +8,7 @@ const Nuevopr = () => {
   const [precio, setPrecio] = useState("");
   const [desc, setDesc] = useState("");
   const [imagen, setImagen] = useState(null);
+  const [imagenUrl, setImagenUrl] = useState("");
   const [cate, setCate] = useState("");
   const [stock, setStock] = useState("");
   const [error, setError] = useState("");
@@ -20,7 +21,16 @@ const Nuevopr = () => {
     e.preventDefault();
 
     if (!producto.trim() || !precio.trim() || !cate.trim()) {
-      setError("Producto, precio y categoría son campos obligatorios.");
+      setError("Todos los campos son obligatorios.");
+      setSuccess("");
+      return;
+    }
+
+    const precioNormalizado = precio.replace(/,/g, ".").trim();
+    const precioNumerico = Number(precioNormalizado);
+
+    if (!/^\d+(?:[.,]\d+)?$/.test(precio.trim()) || Number.isNaN(precioNumerico) || precioNumerico <= 0) {
+      setError("El precio debe ser mayor a 0 y puede incluir punto o coma como decimal.");
       setSuccess("");
       return;
     }
@@ -36,13 +46,15 @@ const Nuevopr = () => {
       const formData = new FormData();
 
       formData.append("nombre", producto.trim());
-      formData.append("precio", precio);
+      formData.append("precio", precioNumerico.toFixed(2));
       formData.append("categoria", cate.trim());
       formData.append("stock", stockNumerico);
       formData.append("descripcion", desc.trim());
 
       if (imagen) {
         formData.append("imagen", imagen);
+      } else if (imagenUrl.trim()) {
+        formData.append("imagenUrl", imagenUrl.trim());
       }
 
       const response = await fetch("http://localhost:3000/api/productos", {
@@ -61,6 +73,7 @@ const Nuevopr = () => {
       setPrecio("");
       setDesc("");
       setImagen(null);
+      setImagenUrl("");
       setCate("");
       setStock("");
 
@@ -90,7 +103,8 @@ const Nuevopr = () => {
           />
           <input
             className="new-product-input"
-            type="number"
+            type="text"
+            inputMode="decimal"
             placeholder="Precio"
             value={precio}
             onChange={(e) => setPrecio(e.target.value)}
@@ -118,6 +132,8 @@ const Nuevopr = () => {
               ))}
             </select>
           </div>
+          <div className="new-product-field">
+            <label className="new-product-label">Stock</label>
             <input
               className="new-product-input"
               type="number"
@@ -127,12 +143,29 @@ const Nuevopr = () => {
               value={stock}
               onChange={(e) => setStock(e.target.value)}
             />
-          <input
-            className="new-product-input"
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImagen(e.target.files[0])}
-          />
+          </div>
+
+          <div className="new-product-field">
+            <label className="new-product-label">Imagen del producto</label>
+            <label className="upload-box" htmlFor="product-image-file">
+              <span className="upload-icon">📷</span>
+              <span>{imagen ? `Archivo: ${imagen.name}` : "Seleccionar archivo"}</span>
+            </label>
+            <input
+              id="product-image-file"
+              className="new-product-file-input"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImagen(e.target.files?.[0] || null)}
+            />
+            <input
+              className="new-product-input"
+              type="url"
+              placeholder="O pega una URL de imagen"
+              value={imagenUrl}
+              onChange={(e) => setImagenUrl(e.target.value)}
+            />
+          </div>
           {error && <p className="new-product-message error">{error}</p>}
           {success && <p className="new-product-message success">{success}</p>}
           <button className="new-product-button" type="submit">
