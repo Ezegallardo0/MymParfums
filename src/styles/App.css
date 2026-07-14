@@ -17,7 +17,6 @@ html, body, #root {
 
 body {
   margin: 0;
-  background: linear-gradient(180deg, #E8EBFF 0%, #D1FBE1 100%);
   color: #002030;
   font-family: "Playfair Display", serif;
 }

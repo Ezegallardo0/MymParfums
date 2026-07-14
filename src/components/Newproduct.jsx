@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import "../styles/newproduct.css";
 
@@ -69,6 +70,7 @@ const Nuevopr = () => {
           {error && <p className="new-product-message error">{error}</p>}
           {success && <p className="new-product-message success">{success}</p>}
           <button className="new-product-button" type="submit">Agregar</button>
+          <Link to="/"><button className="cancel-button">Cancelar</button></Link>
         </form>
       </div>
     </div>

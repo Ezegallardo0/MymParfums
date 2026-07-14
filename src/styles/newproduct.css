@@ -77,6 +77,23 @@
   color: #c0392b;
 }
 
+.cancel-button{
+  background-color: #c0392b;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 999px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cancel-button:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(0, 32, 48, 0.18);
+}
+
 .new-product-message.success {
   color: #2e7d32;
 }

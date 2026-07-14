@@ -34,7 +34,7 @@ const Menu = () => {
                 <>
                   {(usuario?.rol === "Administrador" || usuario?.rol === "Socio") && (
                     <li>
-                      <Link to="/card"><button type="button" className="action-btn action-secondary add-product-btn">
+                      <Link to="/Nuevo-Producto"><button type="button" className="action-btn action-secondary add-product-btn">
                         <i className="bx bx-plus" />Nuevo Producto
                       </button></Link>
                     </li>

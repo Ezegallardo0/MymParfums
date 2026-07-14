@@ -7,7 +7,7 @@ const Card = () => {
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:3000/productos")
+    fetch("http://localhost:3000/api/productos")
       .then((res) => {
         if (!res.ok) {
           throw new Error("No se pudieron cargar los productos");
