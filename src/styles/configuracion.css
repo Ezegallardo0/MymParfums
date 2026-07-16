@@ -14,6 +14,18 @@
   --transition: 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
+:root[data-theme="dark"] {
+  --bg: #07131b;
+  --card: #101d29;
+  --muted: #a7b3c2;
+  --primary: #f3f5f8;
+  --accent: #8ca7bc;
+  --glass: rgba(15, 23, 42, 0.72);
+  --soft-border: rgba(255, 255, 255, 0.12);
+  --shadow-1: 0 12px 30px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 22px 64px rgba(0, 0, 0, 0.3);
+}
+
 @keyframes floatIn {
   from {
     opacity: 0;
@@ -44,6 +56,8 @@
   min-height: calc(100vh - 100px);
   padding: 48px 24px;
   background: var(--bg);
+  color: var(--primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .settings-wrapper {
@@ -189,6 +203,7 @@
   border: none;
   cursor: pointer;
   font-weight: 700;
+  letter-spacing: 0.02em;
   transition:
     transform var(--transition),
     background var(--transition),
@@ -263,13 +278,14 @@
   width: 100%;
   padding: 14px 16px;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: linear-gradient(180deg, #ffffff, rgba(248, 250, 252, 0.98));
+  border: 1px solid var(--soft-border);
+  background: var(--card);
   color: var(--primary);
   font-size: 1rem;
   transition:
     box-shadow var(--transition),
-    border-color var(--transition);
+    border-color var(--transition),
+    background-color 0.3s ease;
 }
 
 .config-input:focus {
@@ -293,11 +309,12 @@
   gap: 18px;
   padding: 18px 20px;
   border-radius: 20px;
-  background: rgba(248, 250, 252, 0.9);
+  background: var(--card);
   border: 1px solid var(--soft-border);
   transition:
     transform var(--transition),
-    box-shadow var(--transition);
+    box-shadow var(--transition),
+    background-color 0.3s ease;
 }
 
 .settings-item:hover {
@@ -323,11 +340,12 @@
 .about-item {
   padding: 18px 20px;
   border-radius: 20px;
-  background: rgba(248, 250, 252, 0.92);
+  background: var(--card);
   border: 1px solid var(--soft-border);
   transition:
     transform var(--transition),
-    box-shadow var(--transition);
+    box-shadow var(--transition),
+    background-color 0.3s ease;
 }
 .about-item:hover {
   transform: translateY(-4px);
@@ -352,6 +370,12 @@
   background: rgba(15, 23, 42, 0.06);
   color: var(--primary);
   font-weight: 600;
+}
+
+:root[data-theme="dark"] .info-chip,
+:root[data-theme="dark"] .toggle-chip {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--primary);
 }
 .config-message {
   margin: 0;
@@ -388,16 +412,17 @@
   width: 100%;
   padding: 18px 20px;
   border-radius: 20px;
-  border: none;
+  border: 1px solid var(--soft-border);
   background: linear-gradient(
     135deg,
-    rgba(248, 250, 252, 0.9) 0%,
-    #ffffff 100%
+    var(--card) 0%,
+    var(--glass) 100%
   );
   box-shadow: var(--shadow-1);
   transition:
     transform var(--transition),
-    box-shadow var(--transition);
+    box-shadow var(--transition),
+    background-color 0.3s ease;
 }
 .employee-item:hover {
   transform: translateY(-6px);
@@ -464,14 +489,15 @@
   border-radius: 20px;
   background: linear-gradient(
     135deg,
-    rgba(248, 250, 252, 0.95) 0%,
-    rgba(226, 232, 240, 0.98) 100%
+    var(--card) 0%,
+    var(--glass) 100%
   );
   color: var(--primary);
   border: 1px solid var(--soft-border);
   transition:
     transform var(--transition),
-    box-shadow var(--transition);
+    box-shadow var(--transition),
+    background-color 0.3s ease;
   align-self: start;
 }
 .employee-side-card:hover {
@@ -488,7 +514,7 @@
   border-radius: 16px;
   border: 1px dashed rgba(148, 163, 184, 0.18);
   color: var(--muted);
-  background: rgba(248, 250, 252, 0.9);
+  background: var(--card);
 }
 
 .add-wrapper {

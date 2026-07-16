@@ -21,6 +21,7 @@
   color: #002030;
   font-size: 2rem;
   text-align: center;
+  font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
 }
 
 .new-product-subtitle {
@@ -28,6 +29,7 @@
   color: #64748b;
   font-size: 1rem;
   text-align: center;
+  font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
 }
 
 .new-product-form {
@@ -64,6 +66,7 @@
   font-size: 1rem;
   outline: none;
   background-color: #fff;
+  font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -117,8 +120,10 @@
   color: white;
   font-weight: 700;
   font-size: 1rem;
+  letter-spacing: 0.02em;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif;
 }
 
 .new-product-button:hover {

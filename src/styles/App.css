@@ -1,9 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+
 /* Global reset and palette base */
 :root {
   color-scheme: light;
-  font-family: "Playfair Display", serif, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   background-color: #E8EBFF;
   color: #002030;
+  --bg-main: #E8EBFF;
+  --bg-surface: #ffffff;
+  --bg-soft: #f4f5fb;
+  --text-main: #002030;
+  --text-muted: #5f6b7a;
+  --border-soft: rgba(0, 32, 48, 0.12);
+  --accent: #002030;
+  --accent-2: #3D5666;
+  --accent-gold: #c28d49;
+  --shadow: rgba(0, 32, 48, 0.12);
 }
 
 * {
@@ -17,8 +29,17 @@ html, body, #root {
 
 body {
   margin: 0;
-  color: #002030;
-  font-family: "Playfair Display", serif;
+  color: var(--text-main);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  background: var(--bg-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {
@@ -27,14 +48,39 @@ a {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: "Playfair Display", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  letter-spacing: 0.01em;
 }
 
-button {
+button,
+button[type="button"],
+button[type="submit"],
+button[type="reset"],
+.nav-links a,
+.action-btn,
+.single-action-btn,
+.home-cart-button,
+.home-cart-checkout,
+.card-btn,
+.primary-btn,
+.primary-button,
+.new-product-button {
   font: inherit;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+
+.secondary-btn,
+.secondary-button {
+  color: #002030;
+  text-shadow: none;
 }
 
 input,
 button {
   outline: none;
 }
+
