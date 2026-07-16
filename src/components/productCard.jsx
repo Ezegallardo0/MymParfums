@@ -33,12 +33,19 @@ const Card = () => {
         <p className="product-card__message">No hay productos disponibles.</p>
       )}
       {!cargando && !error && productos.map((producto) => (
-        <div className="product-card" key={producto.id}>
-          <img className="product-card__image" src={producto.img} alt={producto.nombre} />
-          <div className="product-card__content">
-            <h3 className="product-card__title">{producto.nombre}</h3>
-            <p className="product-card__price">${producto.precio}</p>
-            <button className="product-card__button">Agregar al Carrito</button>
+        <div className="card" key={producto.id}>
+          <div className="wrapper">
+            <span className="tag">Nuevo</span>
+            <div className="card-image">
+              <img className="product-card__image" src={producto.img} alt={producto.nombre} />
+            </div>
+            <div className="content">
+              <div>
+                <h3 className="title">{producto.nombre}</h3>
+                <p className="price">${producto.precio}</p>
+              </div>
+            </div>
+            <button className="card-btn">Agregar</button>
           </div>
         </div>
       ))}

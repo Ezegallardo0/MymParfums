@@ -1,7 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const router=express.Router();
+const router = express.Router();
 const archivo = path.join(__dirname, "../data/productos.json");
 const multer = require("multer");
 
@@ -9,42 +9,39 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "public/uploads");
   },
-  filename: (req,file, cb) => {
-    const nombre =
-      Date.now() + path.extname(file.originalname);
-      cb(null, nombre)
+  filename: (req, file, cb) => {
+    const nombre = Date.now() + path.extname(file.originalname);
+    cb(null, nombre);
   },
 });
-const upload = multer( {storage})
+const upload = multer({ storage });
 
 const leerProductos = () => {
-  if(!fs.existsSync(archivo)){
+  if (!fs.existsSync(archivo)) {
     fs.writeFileSync(archivo, "[]");
   }
   return JSON.parse(fs.readFileSync(archivo, "utf8"));
 };
 
 const guardarProductos = (productos) => {
-  fs.writeFileSync(archivo, JSON.stringify(productos,null, 2));
+  fs.writeFileSync(archivo, JSON.stringify(productos, null, 2));
 };
 
-router.get("/", (req,res)=>{
-  const productos= leerProductos();
-  res.json(productos)
-})
-router.get("/:id", (req, res)=>{
+router.get("/", (req, res) => {
   const productos = leerProductos();
-  const producto = productos.find(
-    (p)=> p.id === req.params.id
-  );
-  if(!producto) {
+  res.json(productos);
+});
+router.get("/:id", (req, res) => {
+  const productos = leerProductos();
+  const producto = productos.find((p) => p.id === req.params.id);
+  if (!producto) {
     return res.status(404).json({
-      error: "Producto no encontrado"
+      error: "Producto no encontrado",
     });
   }
   res.json(producto);
-})
-router.post("/", upload.single("imagen"),(req, res) => {
+});
+router.post("/", upload.single("imagen"), (req, res) => {
   const productos = leerProductos();
 
   const nuevoProducto = {
@@ -56,7 +53,7 @@ router.post("/", upload.single("imagen"),(req, res) => {
     stock: Number(req.body.stock),
     imagen: req.file
       ? `/uploads/${req.file.filename}`
-      : req.body.imagenUrl?.trim() || ""
+      : req.body.imagenUrl?.trim() || "",
   };
 
   productos.push(nuevoProducto);
@@ -71,19 +68,17 @@ router.post("/", upload.single("imagen"),(req, res) => {
 router.put("/:id", (req, res) => {
   const productos = leerProductos();
 
-  const index = productos.findIndex(
-    (p) => p.id === req.params.id
-  );
+  const index = productos.findIndex((p) => p.id === req.params.id);
 
   if (index === -1) {
     return res.status(404).json({
-      error: "Producto no encontrado"
+      error: "Producto no encontrado",
     });
   }
 
   productos[index] = {
     ...productos[index],
-    ...req.body
+    ...req.body,
   };
 
   guardarProductos(productos);
@@ -97,20 +92,18 @@ router.put("/:id", (req, res) => {
 router.delete("/:id", (req, res) => {
   const productos = leerProductos();
 
-  const nuevosProductos = productos.filter(
-    (p) => p.id !== req.params.id
-  );
+  const nuevosProductos = productos.filter((p) => p.id !== req.params.id);
 
   if (productos.length === nuevosProductos.length) {
     return res.status(404).json({
-      error: "Producto no encontrado"
+      error: "Producto no encontrado",
     });
   }
 
   guardarProductos(nuevosProductos);
 
   res.json({
-    mensaje: "Producto eliminado correctamente"
+    mensaje: "Producto eliminado correctamente",
   });
 });
 
