@@ -340,6 +340,29 @@
   font-size: 0.95rem;
 }
 
+.toggle-chip {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  transition: transform var(--transition), box-shadow var(--transition), background-color var(--transition);
+}
+
+.toggle-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.toggle-chip.enabled {
+  background: #0f766e;
+}
+
+.toggle-chip.disabled {
+  background: #94a3b8;
+}
+
 .about-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

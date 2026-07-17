@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import "../styles/nav.css";
+import { getStoredUser } from "../utils/storage";
 
 const normalizeRole = (role) => {
   const value = role?.toString().trim().toLowerCase();
@@ -29,7 +30,7 @@ const canAccessSettings = (user) => {
 const canAccessNewProduct = (user) => ["Administrador", "Socio"].includes(normalizeRole(user?.rol));
 
 const Menu = () => {
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
+  const usuario = getStoredUser();
 
   return (
     <header className="site-header">

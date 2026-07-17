@@ -1,5 +1,6 @@
 import { useContext } from "react";
 import CarritoContext from "./CarritoContext";
+import { emitNotification } from "../utils/notifications";
 
 const CarritoHome = () => {
   const { carrito, total } = useContext(CarritoContext);
@@ -36,7 +37,17 @@ const CarritoHome = () => {
           <p>Total estimado</p>
           <h3>${total}</h3>
         </div>
-        <button type="button" className="home-cart-checkout">
+        <button
+          type="button"
+          className="home-cart-checkout"
+          onClick={() => {
+            const totalItems = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+            emitNotification(
+              `Compra finalizada por ${totalItems} artículo(s). Se registró una venta importante.`,
+              { title: "Venta registrada", type: "success" },
+            );
+          }}
+        >
           Finalizar compra
         </button>
       </div>

@@ -1,6 +1,7 @@
 ﻿import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import "../styles/configuracion.css";
+import { getStoredUser } from "../utils/storage";
 
 const parseResponse = async (response) => {
   const text = await response.text();
@@ -49,7 +50,7 @@ const canAccessSettings = (user) => {
 };
 
 const Configuracion = () => {
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
+  const usuario = getStoredUser();
   const navigate = useNavigate();
   const isAdmin = normalizeRole(usuario?.rol) === "Administrador";
   const [activeSection, setActiveSection] = useState("perfil");
@@ -68,6 +69,23 @@ const Configuracion = () => {
   });
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [preferences, setPreferences] = useState(() => {
+    const stored = window.localStorage.getItem(`mymparfums-preferences-${usuario?.email || "guest"}`);
+    if (!stored) {
+      return { notifications: true };
+    }
+
+    try {
+      return { notifications: true, ...JSON.parse(stored) };
+    } catch {
+      return { notifications: true };
+    }
+  });
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(() => {
+    const stored = window.localStorage.getItem(`mymparfums-2fa-${usuario?.email || "guest"}`);
+    return stored === "true";
+  });
+  const [twoFactorCode, setTwoFactorCode] = useState("");
   const API_URL = "http://localhost:3000/api/empleados";
   const effectiveActiveSection = !isAdmin && activeSection === "empleados" ? "perfil" : activeSection;
 
@@ -102,6 +120,22 @@ const Configuracion = () => {
     return () => window.clearTimeout(timeoutId);
   }, [fetchEmpleados, isAdmin, usuario?.rol, usuario?.email]);
 
+  useEffect(() => {
+    if (!usuario?.email) {
+      return;
+    }
+
+    window.localStorage.setItem(`mymparfums-preferences-${usuario.email}`, JSON.stringify(preferences));
+  }, [preferences, usuario?.email]);
+
+  useEffect(() => {
+    if (!usuario?.email) {
+      return;
+    }
+
+    window.localStorage.setItem(`mymparfums-2fa-${usuario.email}`, String(twoFactorEnabled));
+  }, [twoFactorEnabled, usuario?.email]);
+
   if (!usuario) {
     return <Navigate to="/login" replace />;
   }
@@ -117,6 +151,31 @@ const Configuracion = () => {
   const handleLogout = () => {
     localStorage.removeItem("usuario");
     navigate("/");
+  };
+
+  const toggleNotifications = () => {
+    const nextValue = !preferences.notifications;
+    setPreferences((prev) => ({ ...prev, notifications: nextValue }));
+    setSuccess(nextValue ? "Notificaciones activadas." : "Notificaciones desactivadas.");
+    setError("");
+  };
+
+  const toggleTwoFactor = () => {
+    const nextValue = !twoFactorEnabled;
+    setTwoFactorEnabled(nextValue);
+    setSuccess(
+      nextValue
+        ? "Autenticación en dos pasos activada. Guarda tu código de respaldo."
+        : "Autenticación en dos pasos desactivada.",
+    );
+    setError("");
+
+    if (nextValue) {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setTwoFactorCode(code);
+    } else {
+      setTwoFactorCode("");
+    }
   };
 
   const handleSave = async (event) => {
@@ -370,10 +429,11 @@ const Configuracion = () => {
               <div className="settings-item">
                 <div>
                   <strong>Autenticación en dos pasos</strong>
-                  <p>Protege tu cuenta con un segundo factor.</p>
+                  <p>{twoFactorEnabled ? "Tu cuenta ya está protegida con un segundo factor." : "Protege tu cuenta con un segundo factor."}</p>
+                  {twoFactorCode && <p className="config-message config-success">Código de respaldo: {twoFactorCode}</p>}
                 </div>
-                <button type="button" className="secondary-button settings-action-button">
-                  Configurar
+                <button type="button" className="secondary-button settings-action-button" onClick={toggleTwoFactor}>
+                  {twoFactorEnabled ? "Desactivar" : "Configurar"}
                 </button>
               </div>
             </div>
@@ -392,7 +452,9 @@ const Configuracion = () => {
                   <strong>Notificaciones</strong>
                   <p>Activa o desactiva alertas de novedades.</p>
                 </div>
-                <div className="toggle-chip">Activas</div>
+                <button type="button" className={`toggle-chip ${preferences.notifications ? "enabled" : "disabled"}`} onClick={toggleNotifications}>
+                  {preferences.notifications ? "Activadas" : "Desactivadas"}
+                </button>
               </div>
             </div>
           </div>

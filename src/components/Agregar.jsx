@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/configuracion.css";
+import { emitNotification } from "../utils/notifications";
+import { getStoredUser } from "../utils/storage";
 
 const parseResponse = async (response) => {
   const text = await response.text();
@@ -36,7 +38,7 @@ const normalizeRole = (role) => {
 const Add = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const currentUser = JSON.parse(localStorage.getItem("usuario") || "null");
+  const currentUser = getStoredUser();
   const isAdmin = normalizeRole(currentUser?.rol) === "Administrador";
   const empleadoEditar = location.state?.empleado || null;
   const [nombre, setNombre] = useState(empleadoEditar?.nombre || "");
@@ -97,6 +99,13 @@ const Add = () => {
       if (!response.ok) {
         throw new Error(data.error || "Error guardando empleado");
       }
+
+      emitNotification(
+        empleadoEditar
+          ? `Se actualizó el perfil de ${nombre.trim()} ${apellido.trim()}.`
+          : `Se añadió a ${nombre.trim()} ${apellido.trim()} como ${rol || "empleado"}.`,
+        { title: "Empleado actualizado", type: "success" },
+      );
 
       navigate("/configuracion");
     } catch (saveError) {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import "../styles/newproduct.css";
+import { emitNotification } from "../utils/notifications";
 
 const Nuevopr = () => {
   const [producto, setProducto] = useState("");
@@ -68,6 +69,7 @@ const Nuevopr = () => {
 
       setError("");
       setSuccess("Producto agregado correctamente.");
+      emitNotification(`Se agregó el producto ${producto.trim()} al inventario.`, { title: "Nuevo producto", type: "success" });
 
       setProducto("");
       setPrecio("");

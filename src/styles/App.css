@@ -91,3 +91,41 @@ button {
   outline: none;
 }
 
+.notification-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1200;
+  display: grid;
+  gap: 12px;
+  max-width: min(360px, calc(100vw - 24px));
+}
+
+.notification-toast {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(0, 32, 48, 0.95);
+  color: #ffffff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  border-left: 4px solid #c28d49;
+}
+
+.notification-toast.success {
+  border-left-color: #22c55e;
+}
+
+.notification-toast.error {
+  border-left-color: #ef4444;
+}
+
+.notification-toast strong {
+  font-size: 1rem;
+}
+
+.notification-toast span {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
