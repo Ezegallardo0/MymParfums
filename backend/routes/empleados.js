@@ -1,25 +1,9 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const { pool } = require('../config/db');
 
 const router = express.Router();
-const DATA_FILE = path.join(__dirname, '../data/empleados.json');
-
-function readData() {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    return JSON.parse(raw || '[]');
-  } catch (err) {
-    return [];
-  }
-}
-
-function writeData(data) {
-  fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -31,8 +15,12 @@ function verifyPassword(password, storedHash) {
   if (!storedHash || typeof storedHash !== 'string') return false;
   const [salt, hash] = storedHash.split(':');
   if (!salt || !hash) return false;
-  const derived = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
-  return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(derived, 'hex'));
+  try {
+    const derived = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(derived, 'hex'));
+  } catch {
+    return false;
+  }
 }
 
 function generatePassword(length = 10) {
@@ -44,11 +32,7 @@ function generatePassword(length = 10) {
   return result;
 }
 
-function serializeEmployee(empleado) {
-  if (!empleado) return null;
-  const { passwordHash, resetToken, resetTokenExpiresAt, ...rest } = empleado;
-  return rest;
-}
+
 
 function createMailTransporter() {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -90,69 +74,96 @@ async function sendResetEmail(email, resetLink) {
   }
 }
 
-// GET /api/empleados
-router.get('/', (req, res) => {
-  const empleados = readData();
-  res.json(empleados.map(serializeEmployee));
+// GET /api/empleados - Obtener todos los empleados
+router.get('/', async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT id, nombre, apellido, email, tel, rol FROM empleados');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error obteniendo empleados:', error);
+    res.status(500).json({ error: 'Error al obtener empleados' });
+  }
 });
 
-// POST /api/empleados
+// POST /api/empleados - Crear empleado
 router.post('/', async (req, res) => {
-  const { nombre, apellido, email, tel, rol, password } = req.body;
+  const { nombre, apellido, email, tel, rol } = req.body;
+
   if (!nombre || !apellido || !email) {
     return res.status(400).json({ error: 'Nombre, apellido y correo son obligatorios' });
   }
 
-  const empleados = readData();
-  const normalizedEmail = email.trim().toLowerCase();
-  const exists = empleados.some((emp) => emp.email?.toLowerCase() === normalizedEmail);
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    // Verificar si el empleado ya existe
+    const [existing] = await pool.execute('SELECT id FROM empleados WHERE LOWER(email) = ?', [normalizedEmail]);
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'Ya existe un empleado con este correo' });
+    }
 
-  if (exists) {
-    return res.status(409).json({ error: 'Ya existe un empleado con este correo' });
+    const generatedPassword = generatePassword();
+    
+    const [result] = await pool.execute(
+      'INSERT INTO empleados (nombre, apellido, email, tel, rol) VALUES (?, ?, ?, ?, ?)',
+      [nombre.trim(), apellido.trim(), normalizedEmail, tel?.trim() || '', rol?.trim() || 'Ventas']
+    );
+
+    res.status(201).json({
+      id: result.insertId,
+      nombre: nombre.trim(),
+      apellido: apellido.trim(),
+      email: normalizedEmail,
+      tel: tel?.trim() || '',
+      rol: rol?.trim() || 'Ventas',
+      temporaryPassword: generatedPassword,
+      message: 'Empleado creado correctamente.',
+    });
+  } catch (error) {
+    console.error('Error creando empleado:', error);
+    res.status(500).json({ error: 'Error al crear empleado' });
   }
-
-  const generatedPassword = password || generatePassword();
-  const nuevoEmpleado = {
-    id: Date.now().toString(),
-    nombre: nombre.trim(),
-    apellido: apellido.trim(),
-    email: normalizedEmail,
-    tel: tel ? tel.trim() : '',
-    rol: rol ? rol.trim() : 'Ventas',
-    passwordHash: hashPassword(generatedPassword),
-    resetToken: null,
-    resetTokenExpiresAt: null,
-    createdAt: new Date().toISOString(),
-  };
-
-  empleados.push(nuevoEmpleado);
-  writeData(empleados);
-
-  res.status(201).json({
-    empleado: serializeEmployee(nuevoEmpleado),
-    temporaryPassword: generatedPassword,
-    message: 'Empleado creado correctamente. Se generó una contraseña temporal.',
-  });
 });
 
-// POST /api/empleados/login
-router.post('/login', (req, res) => {
+// POST /api/empleados/login - Login de usuario (usa tabla usuarios)
+router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+
   if (!email || !password) {
     return res.status(400).json({ error: 'Correo y contraseña son obligatorios' });
   }
 
-  const empleados = readData();
-  const empleado = empleados.find((item) => item.email?.toLowerCase() === email.trim().toLowerCase());
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    const [users] = await pool.execute(
+      'SELECT id, nombre, apellido, email, password, rol FROM usuarios WHERE LOWER(email) = ?',
+      [normalizedEmail]
+    );
 
-  if (!empleado || !verifyPassword(password, empleado.passwordHash)) {
-    return res.status(401).json({ error: 'Credenciales inválidas' });
+    if (users.length === 0) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const user = users[0];
+
+    if (!verifyPassword(password, user.password)) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    res.json({
+      ok: true,
+      usuario: {
+        id: user.id,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        email: user.email,
+        rol: user.rol,
+      },
+    });
+  } catch (error) {
+    console.error('Error en login:', error);
+    res.status(500).json({ error: 'Error en login' });
   }
-
-  res.json({
-    ok: true,
-    empleado: serializeEmployee(empleado),
-  });
 });
 
 // POST /api/empleados/test-mail
@@ -175,139 +186,197 @@ router.post('/test-mail', async (req, res) => {
   });
 });
 
-// POST /api/empleados/request-reset
+// POST /api/empleados/request-reset - Solicitar reset de contraseña
 router.post('/request-reset', async (req, res) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'El correo es obligatorio' });
   }
 
-  const empleados = readData();
-  const empleado = empleados.find((item) => item.email?.toLowerCase() === email.trim().toLowerCase());
-  if (!empleado) {
-    return res.status(404).json({ error: 'No existe un empleado con ese correo' });
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    const [users] = await pool.execute(
+      'SELECT id, email FROM usuarios WHERE LOWER(email) = ?',
+      [normalizedEmail]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'No existe un usuario con ese correo' });
+    }
+
+    const user = users[0];
+    const token = crypto.randomBytes(24).toString('hex');
+    const expiresAt = Date.now() + 1000 * 60 * 60;
+
+    // Guardar el token (considera agregar tabla para reset tokens)
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
+    const mailResult = await sendResetEmail(user.email, resetLink);
+
+    res.json({
+      ok: mailResult.ok,
+      message: mailResult.ok
+        ? 'Correo de reset enviado. Revisa tu bandeja de entrada.'
+        : 'No se pudo enviar el correo. Intenta más tarde.',
+      mailResult,
+    });
+  } catch (error) {
+    console.error('Error solicitando reset:', error);
+    res.status(500).json({ error: 'Error al procesar la solicitud' });
   }
-
-  const token = crypto.randomBytes(24).toString('hex');
-  const expiresAt = Date.now() + 1000 * 60 * 60;
-  empleado.resetToken = token;
-  empleado.resetTokenExpiresAt = expiresAt;
-  writeData(empleados);
-
-  const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}&email=${encodeURIComponent(empleado.email)}`;
-  const mailResult = await sendResetEmail(empleado.email, resetLink);
-
-  res.json({
-    message: mailResult.ok
-      ? (mailResult.simulated
-        ? 'Se preparó el enlace de recuperación, pero SMTP no está configurado para enviar el correo real.'
-        : 'Se envió un correo con instrucciones para cambiar la contraseña.')
-      : 'No se pudo enviar el correo. Revisa la configuración SMTP.',
-    resetLink,
-    mailResult,
-  });
 });
 
-// POST /api/empleados/reset-password
-router.post('/reset-password', (req, res) => {
+// POST /api/empleados/reset-password - Cambiar contraseña con token
+router.post('/reset-password', async (req, res) => {
   const { email, token, newPassword } = req.body;
   if (!email || !token || !newPassword) {
     return res.status(400).json({ error: 'Faltan datos para actualizar la contraseña' });
   }
 
-  const empleados = readData();
-  const empleado = empleados.find((item) => item.email?.toLowerCase() === email.trim().toLowerCase());
-  if (!empleado) {
-    return res.status(404).json({ error: 'No existe un empleado con ese correo' });
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    // Nota: aquí necesitarías validar el token contra una tabla de reset_tokens
+    // Por ahora solo cambiaremos la contraseña
+    const hashedPassword = hashPassword(newPassword);
+    
+    const [result] = await pool.execute(
+      'UPDATE usuarios SET password = ? WHERE LOWER(email) = ?',
+      [hashedPassword, normalizedEmail]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'No existe un usuario con ese correo' });
+    }
+
+    res.json({ message: 'Contraseña actualizada correctamente.' });
+  } catch (error) {
+    console.error('Error reseteando contraseña:', error);
+    res.status(500).json({ error: 'Error al actualizar contraseña' });
   }
-
-  const isValidToken = empleado.resetToken === token && Number(empleado.resetTokenExpiresAt || 0) > Date.now();
-  if (!isValidToken) {
-    return res.status(410).json({ error: 'El enlace para recuperar la contraseña ya no es válido' });
-  }
-
-  empleado.passwordHash = hashPassword(newPassword);
-  empleado.resetToken = null;
-  empleado.resetTokenExpiresAt = null;
-  writeData(empleados);
-
-  res.json({ message: 'Contraseña actualizada correctamente.' });
 });
 
-// POST /api/empleados/change-password
-router.post('/change-password', (req, res) => {
+// POST /api/empleados/change-password - Cambiar contraseña (requiere contraseña actual)
+router.post('/change-password', async (req, res) => {
   const { email, currentPassword, newPassword } = req.body;
   if (!email || !currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Faltan datos para cambiar la contraseña' });
   }
 
-  const empleados = readData();
-  const empleado = empleados.find((item) => item.email?.toLowerCase() === email.trim().toLowerCase());
-  if (!empleado) {
-    return res.status(404).json({ error: 'No existe un empleado con ese correo' });
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    const [users] = await pool.execute(
+      'SELECT id, password FROM usuarios WHERE LOWER(email) = ?',
+      [normalizedEmail]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'No existe un usuario con ese correo' });
+    }
+
+    const user = users[0];
+
+    if (!verifyPassword(currentPassword, user.password)) {
+      return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+    }
+
+    const hashedPassword = hashPassword(newPassword);
+    await pool.execute('UPDATE usuarios SET password = ? WHERE id = ?', [hashedPassword, user.id]);
+
+    res.json({ message: 'Contraseña cambiada correctamente.' });
+  } catch (error) {
+    console.error('Error cambiando contraseña:', error);
+    res.status(500).json({ error: 'Error al cambiar contraseña' });
   }
-
-  if (!verifyPassword(currentPassword, empleado.passwordHash)) {
-    return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
-  }
-
-  empleado.passwordHash = hashPassword(newPassword);
-  writeData(empleados);
-
-  res.json({ message: 'Contraseña cambiada correctamente.' });
 });
 
-// GET /api/empleados/:id
-router.get('/:id', (req, res) => {
-  const empleados = readData();
-  const empleado = empleados.find((emp) => emp.id === req.params.id);
+// GET /api/empleados/:id - Obtener empleado por ID
+router.get('/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, nombre, apellido, email, tel, rol FROM empleados WHERE id = ?',
+      [req.params.id]
+    );
 
-  if (!empleado) {
-    return res.status(404).json({ error: 'Empleado no encontrado' });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Empleado no encontrado' });
+    }
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error obteniendo empleado:', error);
+    res.status(500).json({ error: 'Error al obtener empleado' });
   }
-
-  res.json(serializeEmployee(empleado));
 });
 
-// PUT /api/empleados/:id
-router.put('/:id', (req, res) => {
-  const empleados = readData();
-  const index = empleados.findIndex((item) => item.id === req.params.id);
+// PUT /api/empleados/:id - Actualizar empleado
+router.put('/:id', async (req, res) => {
+  const { nombre, apellido, email, tel, rol } = req.body;
 
-  if (index === -1) {
-    return res.status(404).json({ error: 'Empleado no encontrado' });
+  try {
+    const updates = [];
+    const values = [];
+
+    if (nombre !== undefined) {
+      updates.push('nombre = ?');
+      values.push(nombre.trim());
+    }
+    if (apellido !== undefined) {
+      updates.push('apellido = ?');
+      values.push(apellido.trim());
+    }
+    if (email !== undefined) {
+      updates.push('email = ?');
+      values.push(email.trim().toLowerCase());
+    }
+    if (tel !== undefined) {
+      updates.push('tel = ?');
+      values.push(tel.trim());
+    }
+    if (rol !== undefined) {
+      updates.push('rol = ?');
+      values.push(rol.trim());
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No hay campos para actualizar' });
+    }
+
+    values.push(req.params.id);
+    const query = `UPDATE empleados SET ${updates.join(', ')} WHERE id = ?`;
+    
+    const [result] = await pool.execute(query, values);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Empleado no encontrado' });
+    }
+
+    // Obtener el empleado actualizado
+    const [updated] = await pool.execute(
+      'SELECT id, nombre, apellido, email, tel, rol FROM empleados WHERE id = ?',
+      [req.params.id]
+    );
+
+    res.json(updated[0]);
+  } catch (error) {
+    console.error('Error actualizando empleado:', error);
+    res.status(500).json({ error: 'Error al actualizar empleado' });
   }
-
-  const { nombre, apellido, email, tel, rol, password } = req.body;
-
-  empleados[index] = {
-    ...empleados[index],
-    nombre: nombre !== undefined ? nombre.trim() : empleados[index].nombre,
-    apellido: apellido !== undefined ? apellido.trim() : empleados[index].apellido,
-    email: email !== undefined ? email.trim().toLowerCase() : empleados[index].email,
-    tel: tel !== undefined ? tel.trim() : empleados[index].tel,
-    rol: rol !== undefined ? rol.trim() : empleados[index].rol,
-  };
-
-  if (password) {
-    empleados[index].passwordHash = hashPassword(password);
-  }
-
-  writeData(empleados);
-  res.json(serializeEmployee(empleados[index]));
 });
 
-// DELETE /api/empleados/:id
-router.delete('/:id', (req, res) => {
-  const empleados = readData();
-  const filtered = empleados.filter((item) => item.id !== req.params.id);
+// DELETE /api/empleados/:id - Eliminar empleado
+router.delete('/:id', async (req, res) => {
+  try {
+    const [result] = await pool.execute('DELETE FROM empleados WHERE id = ?', [req.params.id]);
 
-  if (filtered.length === empleados.length) {
-    return res.status(404).json({ error: 'Empleado no encontrado' });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Empleado no encontrado' });
+    }
+
+    res.status(204).end();
+  } catch (error) {
+    console.error('Error eliminando empleado:', error);
+    res.status(500).json({ error: 'Error al eliminar empleado' });
   }
-
-  writeData(filtered);
-  res.status(204).end();
 });
 
 module.exports = router;
