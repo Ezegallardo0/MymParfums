@@ -15,7 +15,7 @@ const Nuevopr = () => {
   const [success, setSuccess] = useState("");
 
   const navigate = useNavigate();
-  const categorias = ["Femenino", "Masculino", "Unisex"];
+  const categorias = ["Destacadas", "Armaf & Afnan", "Lattafa & Maison Alhambra"];
 
   const guardarPr = async (e) => {
     e.preventDefault();

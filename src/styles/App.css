@@ -31,6 +31,8 @@ body {
   margin: 0;
   color: var(--text-main);
   font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 18px;
+  line-height: 1.6;
   background: var(--bg-main);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -50,6 +52,11 @@ a {
 h1, h2, h3, h4, h5, h6 {
   font-family: "Cormorant Garamond", Georgia, serif;
   letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+p, span, label, li, small {
+  font-size: 1.02em;
 }
 
 button,

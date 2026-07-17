@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/configuracion.css";
 
@@ -15,9 +15,29 @@ const parseResponse = async (response) => {
   }
 };
 
+const normalizeRole = (role) => {
+  const value = role?.toString().trim().toLowerCase();
+  switch (value) {
+    case "administrador":
+    case "adminsitrador":
+    case "admin":
+      return "Administrador";
+    case "socio":
+      return "Socio";
+    case "ventas":
+    case "vendedor":
+    case "vendedores":
+      return "Ventas";
+    default:
+      return role?.toString().trim() || "";
+  }
+};
+
 const Add = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const currentUser = JSON.parse(localStorage.getItem("usuario") || "null");
+  const isAdmin = normalizeRole(currentUser?.rol) === "Administrador";
   const empleadoEditar = location.state?.empleado || null;
   const [nombre, setNombre] = useState(empleadoEditar?.nombre || "");
   const [apellido, setApellido] = useState(empleadoEditar?.apellido || "");
@@ -28,8 +48,19 @@ const Add = () => {
   const [error, setError] = useState("");
   const API_URL = "http://localhost:3000/api/empleados";
 
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate("/configuracion", { replace: true });
+    }
+  }, [isAdmin, navigate]);
+
   const guardarEmp = async (e) => {
     e.preventDefault();
+
+    if (!isAdmin) {
+      setError("Solo los administradores pueden gestionar empleados.");
+      return;
+    }
 
     if (!nombre.trim() || !apellido.trim()) {
       setError("Nombre y apellido son obligatorios");
@@ -47,6 +78,8 @@ const Add = () => {
       email: email.trim(),
       tel: tel.trim(),
       rol,
+      actorRole: currentUser?.rol,
+      actorEmail: currentUser?.email,
       ...(password.trim() ? { password: password.trim() } : {}),
     };
 

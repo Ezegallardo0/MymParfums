@@ -40,7 +40,7 @@ const Card = () => {
             <div className="wrapper">
               <span className="tag">Nuevo</span>
               <div className="card-image">
-                <img className="product-card__image" src={producto.img} alt={producto.nombre} />
+                <img className="product-card__image" src={producto.imagen || producto.img || "https://placehold.co/600x600/002030/E8EBFF?text=Sin+imagen"} alt={producto.nombre} />
               </div>
               <div className="content">
                 <div>

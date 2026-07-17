@@ -5,6 +5,33 @@ const { pool } = require('../config/db');
 
 const router = express.Router();
 
+function normalizeRole(role) {
+  if (typeof role !== 'string') {
+    return '';
+  }
+
+  const trimmedRole = role.trim().toLowerCase();
+  const aliases = {
+    administrador: 'Administrador',
+    adminsitrador: 'Administrador',
+    admin: 'Administrador',
+    socio: 'Socio',
+    ventas: 'Ventas',
+    vendedor: 'Ventas',
+    vendedores: 'Ventas',
+  };
+
+  return aliases[trimmedRole] || role.trim();
+}
+
+function isAdminActor(role) {
+  return normalizeRole(role) === 'Administrador';
+}
+
+function isSelfUpdate(actorEmail, targetEmail) {
+  return Boolean(actorEmail && targetEmail && actorEmail.trim().toLowerCase() === targetEmail.trim().toLowerCase());
+}
+
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
@@ -76,6 +103,12 @@ async function sendResetEmail(email, resetLink) {
 
 // GET /api/empleados - Obtener todos los empleados
 router.get('/', async (req, res) => {
+  const actorRole = req.query.actorRole || '';
+
+  if (!isAdminActor(actorRole)) {
+    return res.status(403).json({ error: 'Solo los administradores pueden ver empleados' });
+  }
+
   try {
     const [rows] = await pool.execute('SELECT id, nombre, apellido, email, tel, rol FROM empleados');
     res.json(rows);
@@ -87,7 +120,11 @@ router.get('/', async (req, res) => {
 
 // POST /api/empleados - Crear empleado
 router.post('/', async (req, res) => {
-  const { nombre, apellido, email, tel, rol } = req.body;
+  const { nombre, apellido, email, tel, rol, password, actorRole, actorEmail } = req.body;
+
+  if (!isAdminActor(actorRole)) {
+    return res.status(403).json({ error: 'Solo los administradores pueden gestionar empleados' });
+  }
 
   if (!nombre || !apellido || !email) {
     return res.status(400).json({ error: 'Nombre, apellido y correo son obligatorios' });
@@ -95,28 +132,39 @@ router.post('/', async (req, res) => {
 
   try {
     const normalizedEmail = email.trim().toLowerCase();
-    
-    // Verificar si el empleado ya existe
+
     const [existing] = await pool.execute('SELECT id FROM empleados WHERE LOWER(email) = ?', [normalizedEmail]);
     if (existing.length > 0) {
       return res.status(409).json({ error: 'Ya existe un empleado con este correo' });
     }
 
-    const generatedPassword = generatePassword();
-    
+    const plainPassword = typeof password === 'string' && password.trim() ? password.trim() : generatePassword();
+    const hashedPassword = hashPassword(plainPassword);
+    const normalizedRole = normalizeRole(rol) || 'Ventas';
+
     const [result] = await pool.execute(
       'INSERT INTO empleados (nombre, apellido, email, tel, rol) VALUES (?, ?, ?, ?, ?)',
-      [nombre.trim(), apellido.trim(), normalizedEmail, tel?.trim() || '', rol?.trim() || 'Ventas']
+      [nombre.trim(), apellido.trim(), normalizedEmail, tel?.trim() || '', normalizedRole]
     );
 
-    res.status(201).json({
+    await pool.execute(
+      'INSERT INTO usuarios (nombre, apellido, email, password, rol) VALUES (?, ?, ?, ?, ?)',
+      [nombre.trim(), apellido.trim(), normalizedEmail, hashedPassword, normalizedRole]
+    );
+
+    const empleado = {
       id: result.insertId,
       nombre: nombre.trim(),
       apellido: apellido.trim(),
       email: normalizedEmail,
       tel: tel?.trim() || '',
-      rol: rol?.trim() || 'Ventas',
-      temporaryPassword: generatedPassword,
+      rol: normalizedRole,
+    };
+
+    res.status(201).json({
+      empleado,
+      usuario: { ...empleado, password: hashedPassword },
+      temporaryPassword: plainPassword,
       message: 'Empleado creado correctamente.',
     });
   } catch (error) {
@@ -150,15 +198,18 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
+    const empleado = {
+      id: user.id,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      email: user.email,
+      rol: normalizeRole(user.rol),
+    };
+
     res.json({
       ok: true,
-      usuario: {
-        id: user.id,
-        nombre: user.nombre,
-        apellido: user.apellido,
-        email: user.email,
-        rol: user.rol,
-      },
+      usuario: empleado,
+      empleado,
     });
   } catch (error) {
     console.error('Error en login:', error);
@@ -310,7 +361,7 @@ router.get('/:id', async (req, res) => {
 
 // PUT /api/empleados/:id - Actualizar empleado
 router.put('/:id', async (req, res) => {
-  const { nombre, apellido, email, tel, rol } = req.body;
+  const { nombre, apellido, email, tel, rol, actorRole, actorEmail } = req.body;
 
   try {
     const updates = [];
@@ -334,26 +385,77 @@ router.put('/:id', async (req, res) => {
     }
     if (rol !== undefined) {
       updates.push('rol = ?');
-      values.push(rol.trim());
+      values.push(normalizeRole(rol));
     }
 
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No hay campos para actualizar' });
     }
 
-    values.push(req.params.id);
+    const employeeIdParam = Number(req.params.id);
+    let employeeRow = null;
+
+    if (!Number.isNaN(employeeIdParam)) {
+      const [rows] = await pool.execute('SELECT id, email FROM empleados WHERE id = ?', [employeeIdParam]);
+      employeeRow = rows[0];
+    }
+
+    if (!employeeRow && email) {
+      const [rows] = await pool.execute('SELECT id, email FROM empleados WHERE LOWER(email) = ?', [email.trim().toLowerCase()]);
+      employeeRow = rows[0];
+    }
+
+    if (!employeeRow) {
+      return res.status(404).json({ error: 'Empleado no encontrado' });
+    }
+
+    const targetEmail = email?.trim().toLowerCase() || employeeRow.email;
+    const canManageEmployee = isAdminActor(actorRole) || isSelfUpdate(actorEmail, targetEmail);
+
+    if (!canManageEmployee) {
+      return res.status(403).json({ error: 'Solo los administradores pueden modificar empleados' });
+    }
+
+    values.push(employeeRow.id);
     const query = `UPDATE empleados SET ${updates.join(', ')} WHERE id = ?`;
-    
     const [result] = await pool.execute(query, values);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Empleado no encontrado' });
     }
 
-    // Obtener el empleado actualizado
+    const userUpdates = [];
+    const userValues = [];
+
+    if (nombre !== undefined) {
+      userUpdates.push('nombre = ?');
+      userValues.push(nombre.trim());
+    }
+    if (apellido !== undefined) {
+      userUpdates.push('apellido = ?');
+      userValues.push(apellido.trim());
+    }
+    if (email !== undefined) {
+      userUpdates.push('email = ?');
+      userValues.push(email.trim().toLowerCase());
+    }
+    if (tel !== undefined) {
+      userUpdates.push('tel = ?');
+      userValues.push(tel.trim());
+    }
+    if (rol !== undefined) {
+      userUpdates.push('rol = ?');
+      userValues.push(normalizeRole(rol));
+    }
+
+    if (userUpdates.length > 0) {
+      userValues.push(targetEmail);
+      await pool.execute(`UPDATE usuarios SET ${userUpdates.join(', ')} WHERE LOWER(email) = ?`, userValues);
+    }
+
     const [updated] = await pool.execute(
       'SELECT id, nombre, apellido, email, tel, rol FROM empleados WHERE id = ?',
-      [req.params.id]
+      [employeeRow.id]
     );
 
     res.json(updated[0]);
@@ -365,6 +467,12 @@ router.put('/:id', async (req, res) => {
 
 // DELETE /api/empleados/:id - Eliminar empleado
 router.delete('/:id', async (req, res) => {
+  const { actorRole, actorEmail } = req.body;
+
+  if (!isAdminActor(actorRole)) {
+    return res.status(403).json({ error: 'Solo los administradores pueden eliminar empleados' });
+  }
+
   try {
     const [result] = await pool.execute('DELETE FROM empleados WHERE id = ?', [req.params.id]);
 

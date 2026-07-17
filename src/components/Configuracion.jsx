@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import "../styles/configuracion.css";
 
@@ -23,16 +23,35 @@ const sections = [
   { id: "empleados", label: "Empleados", icon: "bx bx-user-plus" },
 ];
 
-const allowedRoles = ["Administrador", "Socio", "Vendedor"];
+const normalizeRole = (role) => {
+  const value = role?.toString().trim().toLowerCase();
+  switch (value) {
+    case "administrador":
+    case "adminsitrador":
+    case "admin":
+      return "Administrador";
+    case "socio":
+      return "Socio";
+    case "ventas":
+    case "vendedor":
+    case "vendedores":
+      return "Ventas";
+    default:
+      return role?.toString().trim() || "";
+  }
+};
+
+const allowedRoles = ["Administrador", "Socio", "Ventas"];
 
 const canAccessSettings = (user) => {
   const email = user?.email?.toLowerCase();
-  return allowedRoles.includes(user?.rol) || email === "plumiferogaming@gmail.com";
+  return allowedRoles.includes(normalizeRole(user?.rol)) || email === "plumiferogaming@gmail.com";
 };
 
 const Configuracion = () => {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
   const navigate = useNavigate();
+  const isAdmin = normalizeRole(usuario?.rol) === "Administrador";
   const [activeSection, setActiveSection] = useState("perfil");
   const [nombre, setNombre] = useState(usuario?.nombre || "");
   const [email, setEmail] = useState(usuario?.email || "");
@@ -50,10 +69,16 @@ const Configuracion = () => {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const API_URL = "http://localhost:3000/api/empleados";
+  const effectiveActiveSection = !isAdmin && activeSection === "empleados" ? "perfil" : activeSection;
 
-  const fetchEmpleados = async () => {
+  const fetchEmpleados = useCallback(async (actorRole = usuario?.rol, actorEmail = usuario?.email) => {
+    const params = new URLSearchParams({
+      actorRole: actorRole || "",
+      actorEmail: actorEmail || "",
+    });
+
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(`${API_URL}?${params.toString()}`);
       if (!response.ok) {
         throw new Error("No se pudo cargar la lista de empleados");
       }
@@ -63,11 +88,19 @@ const Configuracion = () => {
     } catch (fetchError) {
       setEmpleadosError(fetchError.message || "Error al cargar empleados");
     }
-  };
+  }, [usuario?.rol, usuario?.email]);
 
   useEffect(() => {
-    fetchEmpleados();
-  }, []);
+    if (!isAdmin) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void fetchEmpleados(usuario?.rol, usuario?.email);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [fetchEmpleados, isAdmin, usuario?.rol, usuario?.email]);
 
   if (!usuario) {
     return <Navigate to="/login" replace />;
@@ -77,12 +110,16 @@ const Configuracion = () => {
     return <Navigate to="/" replace />;
   }
 
+  if (!isAdmin && activeSection === "empleados") {
+    return <Navigate to="/configuracion" replace />;
+  }
+
   const handleLogout = () => {
     localStorage.removeItem("usuario");
     navigate("/");
   };
 
-  const handleSave = (event) => {
+  const handleSave = async (event) => {
     event.preventDefault();
     if (!nombre.trim() || !email.trim()) {
       setError("Nombre y correo son obligatorios.");
@@ -90,18 +127,61 @@ const Configuracion = () => {
       return;
     }
 
-    localStorage.setItem(
-      "usuario",
-      JSON.stringify({
-        ...usuario,
-        nombre: nombre.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-      }),
-    );
+    try {
+      const response = await fetch(`${API_URL}/${usuario.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          apellido: usuario?.apellido || "",
+          email: email.trim(),
+          tel: phone.trim(),
+          rol: usuario?.rol,
+          actorRole: usuario?.rol,
+          actorEmail: usuario?.email,
+        }),
+      });
 
-    setSuccess("Cambios guardados correctamente.");
-    setError("");
+      const data = await parseResponse(response);
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo guardar el perfil");
+      }
+
+      const updatedUsuario = {
+        ...usuario,
+        id: usuario.id,
+        nombre: data.nombre || nombre.trim(),
+        apellido: data.apellido || usuario?.apellido || "",
+        email: data.email || email.trim(),
+        phone: data.tel || phone.trim(),
+        tel: data.tel || phone.trim(),
+        rol: data.rol || usuario?.rol,
+      };
+
+      localStorage.setItem("usuario", JSON.stringify(updatedUsuario));
+
+      setEmpleados((prev) =>
+        prev.map((empleado) =>
+          empleado.id === data.id || empleado.email?.toLowerCase() === (data.email || email.trim()).toLowerCase()
+            ? {
+                ...empleado,
+                nombre: data.nombre || empleado.nombre,
+                apellido: data.apellido || empleado.apellido,
+                email: data.email || empleado.email,
+                tel: data.tel || empleado.tel,
+                rol: data.rol || empleado.rol,
+              }
+            : empleado,
+        ),
+      );
+
+      await fetchEmpleados();
+      setSuccess("Cambios guardados correctamente.");
+      setError("");
+    } catch (saveError) {
+      setError(saveError.message || "No se pudo guardar el perfil");
+      setSuccess("");
+    }
   };
 
   const handlePasswordSubmit = async (event) => {
@@ -144,12 +224,23 @@ const Configuracion = () => {
   };
 
   const handleDeleteEmpleado = async (id) => {
+    if (!isAdmin) {
+      setError("Solo los administradores pueden eliminar empleados.");
+      setSuccess("");
+      return;
+    }
+
     const confirmDelete = window.confirm("¿Eliminar este empleado?");
     if (!confirmDelete) return;
 
     try {
       const response = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actorRole: usuario?.rol,
+          actorEmail: usuario?.email,
+        }),
       });
       if (!response.ok) {
         throw new Error("No se pudo eliminar el empleado");
@@ -162,11 +253,17 @@ const Configuracion = () => {
   };
 
   const handleEditEmpleado = (empleado) => {
+    if (!isAdmin) {
+      setError("Solo los administradores pueden editar empleados.");
+      setSuccess("");
+      return;
+    }
+
     navigate("/configuracion/agregar", { state: { empleado } });
   };
 
   const renderSection = () => {
-    switch (activeSection) {
+    switch (effectiveActiveSection) {
       case "perfil":
         return (
           <div className="settings-card">
@@ -222,7 +319,11 @@ const Configuracion = () => {
                   <strong>Cambiar contraseña</strong>
                   <p>Actualiza tu contraseña cuando lo necesites.</p>
                 </div>
-                <button type="button" className="secondary-button" onClick={() => setShowPasswordForm((value) => !value)}>
+                <button
+                  type="button"
+                  className="secondary-button settings-action-button"
+                  onClick={() => setShowPasswordForm((value) => !value)}
+                >
                   {showPasswordForm ? "Ocultar" : "Cambiar"}
                 </button>
               </div>
@@ -271,7 +372,7 @@ const Configuracion = () => {
                   <strong>Autenticación en dos pasos</strong>
                   <p>Protege tu cuenta con un segundo factor.</p>
                 </div>
-                <button type="button" className="secondary-button">
+                <button type="button" className="secondary-button settings-action-button">
                   Configurar
                 </button>
               </div>
@@ -292,13 +393,6 @@ const Configuracion = () => {
                   <p>Activa o desactiva alertas de novedades.</p>
                 </div>
                 <div className="toggle-chip">Activas</div>
-              </div>
-              <div className="settings-item">
-                <div>
-                  <strong>Dark mode</strong>
-                  <p>Habilita un tema oscuro para la interfaz.</p>
-                </div>
-                <div className="toggle-chip">Automático</div>
               </div>
             </div>
           </div>
@@ -327,6 +421,18 @@ const Configuracion = () => {
           </div>
         );
       case "empleados":
+        if (!isAdmin) {
+          return (
+            <div className="settings-card">
+              <div className="settings-card-header">
+                <h2>Empleados</h2>
+                <span>Solo los administradores pueden ver y gestionar esta sección.</span>
+              </div>
+              <p className="config-message config-error">No tienes permisos para administrar empleados.</p>
+            </div>
+          );
+        }
+
         return (
           <div className="settings-card">
             <div className="settings-card-header">
@@ -392,17 +498,19 @@ const Configuracion = () => {
             <p>Panel clásico de configuración</p>
           </div>
           <div className="nav-list">
-            {sections.map((section) => (
-              <button
-                key={section.id}
-                type="button"
-                className={`nav-link ${activeSection === section.id ? "active" : ""}`}
-                onClick={() => setActiveSection(section.id)}
-              >
-                <i className={`bx ${section.icon}`} />
-                {section.label}
-              </button>
-            ))}
+            {sections
+              .filter((section) => section.id !== "empleados" || normalizeRole(usuario?.rol) === "Administrador")
+              .map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  className={`nav-link ${effectiveActiveSection === section.id ? "active" : ""}`}
+                  onClick={() => setActiveSection(section.id)}
+                >
+                  <i className={`bx ${section.icon}`} />
+                  {section.label}
+                </button>
+              ))}
           </div>
         </aside>
 

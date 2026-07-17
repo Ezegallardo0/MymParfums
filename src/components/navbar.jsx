@@ -1,12 +1,32 @@
 import { Link } from "react-router-dom";
 import "../styles/nav.css";
 
-const allowedRoles = ["Administrador", "Socio", "Vendedor"];
+const normalizeRole = (role) => {
+  const value = role?.toString().trim().toLowerCase();
+  switch (value) {
+    case "administrador":
+    case "adminsitrador":
+    case "admin":
+      return "Administrador";
+    case "socio":
+      return "Socio";
+    case "ventas":
+    case "vendedor":
+    case "vendedores":
+      return "Ventas";
+    default:
+      return role?.toString().trim() || "";
+  }
+};
+
+const allowedRoles = ["Administrador", "Socio", "Ventas"];
 
 const canAccessSettings = (user) => {
   const email = user?.email?.toLowerCase();
-  return allowedRoles.includes(user?.rol) || email === "plumiferogaming@gmail.com";
+  return allowedRoles.includes(normalizeRole(user?.rol)) || email === "plumiferogaming@gmail.com";
 };
+
+const canAccessNewProduct = (user) => ["Administrador", "Socio"].includes(normalizeRole(user?.rol));
 
 const Menu = () => {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -32,7 +52,7 @@ const Menu = () => {
             <ul className="nav-actions nav-right">
               {usuario ? (
                 <>
-                  {(usuario?.rol === "Administrador" || usuario?.rol === "Socio") && (
+                  {canAccessNewProduct(usuario) && (
                     <li>
                       <Link to="/Nuevo-Producto"><button type="button" className="action-btn action-secondary add-product-btn">
                         <i className="bx bx-plus" />Nuevo Producto

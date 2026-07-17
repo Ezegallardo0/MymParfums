@@ -61,7 +61,10 @@ const CrearCuenta = () => {
         throw new Error(data.error || "No se pudo crear la cuenta");
       }
 
-      localStorage.setItem("usuario", JSON.stringify(data.empleado));
+      const usuario = data.usuario || data.empleado || null;
+      if (usuario) {
+        localStorage.setItem("usuario", JSON.stringify(usuario));
+      }
       navigate("/");
     } catch (saveError) {
       setError(saveError.message || "No se pudo crear la cuenta");

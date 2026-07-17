@@ -51,7 +51,10 @@ const Login = () => {
         throw new Error(data.error || "No se pudo iniciar sesión");
       }
 
-      localStorage.setItem("usuario", JSON.stringify(data.empleado));
+      const usuario = data.usuario || data.empleado || null;
+      if (usuario) {
+        localStorage.setItem("usuario", JSON.stringify(usuario));
+      }
       navigate("/");
     } catch (loginError) {
       setError(loginError.message || "No se pudo iniciar sesión");
